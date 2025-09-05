@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nyc e Ni</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+        }
+
+        /* Estilo do modal (lightbox) para exibir as fotos em tela cheia */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.85);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .modal.is-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-image {
+            transform: scale(0.95);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .modal.is-active .modal-image {
+            transform: scale(1);
+        }
+
+        .back-button {
+            transition: transform 0.2s;
+        }
+        
+        .back-button:hover {
+            transform: translateX(-5px);
+        }
+
+        /* Estilos para o modo de edição */
+        .photo-item {
+            cursor: grab;
+        }
+        .photo-item.dragging {
+            opacity: 0.5;
+            border: 2px dashed #9ca3af;
+        }
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
+
+    <header class="w-full max-w-5xl text-center mb-8">
+        <h1 id="main-title" class="text-4xl font-extrabold text-gray-800 mb-2">Galeria de Álbuns</h1>
+        <p id="main-subtitle" class="text-xl text-gray-600">fotos nyc e ni</p>
+    </header>   
+
+    <main id="app-container" class="w-full max-w-5xl">
+        <p class="text-center text-gray-500">Carregando álbuns...</p>
+    </main>
+
+    <div id="lightbox-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50">
+        <div class="relative w-full max-w-4xl max-h-full">
+            <img id="modal-image" class="modal-image w-full h-auto object-contain rounded-xl shadow-2xl" src="" alt="Foto Ampliada">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-white text-3xl font-bold bg-gray-800 bg-opacity-50 hover:bg-opacity-75 rounded-full w-10 h-10 flex items-center justify-center">
+                &times;
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Substitua este objeto de configuração com o seu do Firebase!
+            const firebaseConfig = {
+                apiKey: "AIzaSyAQxhEQFrL4L2W_8B5oYZt12UoE8ojSkV0",
+                authDomain: "galeria-d93d9.firebaseapp.com",
+                databaseURL: "https://galeria-d93d9-default-rtdb.firebaseio.com",
+                projectId: "galeria-d93d9",
+                storageBucket: "galeria-d93d9.firebasestorage.app",
+                messagingSenderId: "943324121087",
+                appId: "1:943324121087:web:5204e0311a56ebc938c9ca",
+                measurementId: "G-R8CCVM1PV5"
+            };
+
+            // Inicialize o Firebase
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const albumsRef = db.collection('galeria').doc('principal');
+
+            let albums = []; // A variável que vamos manipular
+
+            /**
+             * Salva a lista de álbuns no Firebase.
+             */
+            async function saveAlbums() {
+                try {
+                    await albumsRef.set({ albums });
+                    console.log("Álbuns salvos com sucesso no Firebase!");
+                } catch (e) {
+                    console.error("Erro ao salvar álbuns: ", e);
+                }
+            }
+
+            /**
+             * Carrega a lista de álbuns do Firebase.
+             */
+            async function loadAlbums() {
+                try {
+                    const doc = await albumsRef.get();
+                    if (doc.exists && doc.data().albums) {
+                        albums = doc.data().albums;
+                        console.log("Álbuns carregados do Firebase!");
+                    } else {
+                        // Se não houver dados no Firebase, use a lista inicial.
+                        // Esta é a sua lista original, que você deve copiar para o Firebase na primeira vez.
+                        albums = [
+                            {
+                                id: 'viagem-rio',
+                                title: 'Viagem ao Rio de Janeiro',
+                                coverImage: 'WhatsApp Image 2025-08-29 at 18.19.19.png',    
+                                photos: [
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+1',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+2',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+3',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+4',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+5'
+                                ]
+                            },
+                            {
+                                id: 'aniversario-joao',
+                                title: 'Aniversário do João',
+                                coverImage: 'WhatsApp Image 2025-09-03 at 17.05.45 (1).jpeg',
+                                photos: [
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.57 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.10 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.57.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.58 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.58 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.58 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.58.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.59 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.59 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.24.59.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.25.00.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.10 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.10.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.11 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.11.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.12 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.12 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.12.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.13 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.13 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.13.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.14 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.14.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.15 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.15.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.16 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.16 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.16.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.17 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.17 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.17.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.18 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.26.18.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.26 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.26 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.26.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.27 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.27 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.27.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.28 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.28 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.28 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.28.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.29 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.29 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.29 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.29.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.30 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.30 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.30 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.30.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.31 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.31 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.31 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.31.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.32 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.32 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.32.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.33 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.33 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.33 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.33.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.34 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.34 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.34.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.35 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.35 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.35.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.36 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.27.36.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.06.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.07 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.07 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.07.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.28 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.28 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.28.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.29 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.29 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.29.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.57.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.58 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.58.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.59 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.59 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.59 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.28.59.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.00 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.00 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.00.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.01 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.01 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.01 (3).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.01.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.02 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.02.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.04.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.58 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.58 (2).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.58.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.29.59.jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.30.48 (1).jpeg',
+                                    'torres/WhatsApp Image 2025-09-04 at 16.30.48.jpeg'
+                                ]
+                            },
+                            {
+                                id: 'passeio-parque',
+                                title: 'Passeio no Parque',
+                                coverImage: 'https://placehold.co/400x300/d1fae5/065f46?text=Capa+Parque',
+                                photos: [
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+1',
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+2',
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+3',
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+4'
+                                ]
+                            },
+                        ];
+                        saveAlbums(); // Salva a lista inicial no Firebase pela primeira vez
+                    }
+                    renderAlbums();
+                } catch (e) {
+                    console.error("Erro ao carregar álbuns: ", e);
+                    // Em caso de erro, use a lista inicial para não travar o site.
+                    albums = initialAlbums;
+                    renderAlbums();
+                }
+            }
+            
+            const appContainer = document.getElementById('app-container');
+            const mainTitle = document.getElementById('main-title');
+            const mainSubtitle = document.getElementById('main-subtitle');
+            const lightboxModal = document.getElementById('lightbox-modal');
+            const modalImage = document.getElementById('modal-image');
+            const closeModalBtn = document.getElementById('close-modal-btn');
+
+            /**
+             * Função para renderizar a tela inicial com todos os álbuns.
+             */
+            function renderAlbums() {
+                // Limpa o container e atualiza os títulos
+                appContainer.innerHTML = '';
+                mainTitle.textContent = 'Galeria de Álbuns';
+                mainSubtitle.textContent = 'Fotos Nyc e Ni';
+
+                // Cria o grid de álbuns
+                const albumsGrid = document.createElement('div');
+                albumsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8';
+
+                albums.forEach(album => {
+                    const albumCard = document.createElement('div');
+                    albumCard.className = 'bg-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer';
+                    albumCard.innerHTML = `
+                        <img src="${album.coverImage}" alt="Capa do Álbum: ${album.title}" class="w-full h-48 object-cover rounded-t-xl">
+                        <div class="p-5 text-center">
+                            <h3 class="text-xl font-semibold text-gray-700">${album.title}</h3>
+                        </div>
+                    `;
+                    // Adiciona o evento de clique para abrir o álbum
+                    albumCard.addEventListener('click', () => renderAlbumPhotos(album.id));
+                    albumsGrid.appendChild(albumCard);
+                });
+
+                appContainer.appendChild(albumsGrid);
+            }
+
+            /**
+             * Função para renderizar as fotos de um álbum específico.
+             * @param {string} albumId - O ID do álbum a ser exibido.
+             */
+            function renderAlbumPhotos(albumId) {
+                const album = albums.find(a => a.id === albumId);
+                if (!album) return; // Retorna se o álbum não for encontrado
+
+                // Limpa o container e atualiza os títulos
+                appContainer.innerHTML = '';
+                mainTitle.textContent = album.title;
+                mainSubtitle.textContent = `${album.photos.length} Fotos`;
+
+                // Botão de voltar para a galeria de álbuns
+                const backBtn = document.createElement('button');
+                backBtn.className = 'back-button text-gray-600 hover:text-gray-800 font-semibold flex items-center text-lg';
+                backBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Voltar para os Álbuns
+                `;
+                backBtn.addEventListener('click', renderAlbums);
+
+                // Botão de edição para alternar para o modo de edição
+                const editBtn = document.createElement('button');
+                editBtn.className = 'ml-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center text-lg';
+                editBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232a2 2 0 012.828 0l.536.536a2 2 0 010 2.828l-7.07 7.07a2 2 0 01-.818.536l-3.324.966a1 1 0 01-1.21-.86L4.2 14.536a2 2 0 01.536-.818l7.07-7.07z" />
+                    </svg>
+                    Editar Álbum
+                `;
+                editBtn.addEventListener('click', () => renderEditMode(album));
+
+                const headerButtons = document.createElement('div');
+                headerButtons.className = 'flex items-center mb-6';
+                headerButtons.appendChild(backBtn);
+                headerButtons.appendChild(editBtn); 
+                appContainer.appendChild(headerButtons);
+
+                // Cria o grid de fotos
+                const photosGrid = document.createElement('div');
+                photosGrid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+
+                album.photos.forEach(photoUrl => {
+                    const photoCard = document.createElement('div');
+                    photoCard.className = 'overflow-hidden rounded-xl shadow-md cursor-pointer transform hover:scale-105 transition-transform duration-300';
+                    photoCard.innerHTML = `
+                        <img src="${photoUrl}" alt="Foto do Álbum" class="w-full h-56 object-cover">
+                    `;
+                    // Adiciona o evento de clique para abrir o lightbox
+                    photoCard.addEventListener('click', () => openLightbox(photoUrl));
+                    photosGrid.appendChild(photoCard);
+                });
+
+                appContainer.appendChild(photosGrid);
+            }
+
+            /**
+             * Função para renderizar a interface de edição de um álbum.
+             * @param {object} album - O objeto do álbum a ser editado.
+             */
+            function renderEditMode(album) {
+                appContainer.innerHTML = '';
+                mainTitle.textContent = `Editando: ${album.title}`;
+                mainSubtitle.textContent = 'Arraste para reordenar, remova ou adicione novas fotos.';
+
+                // Botão de voltar para a visualização do álbum
+                const saveAndBackBtn = document.createElement('button');
+                saveAndBackBtn.className = 'back-button mb-6 text-green-600 hover:text-green-800 font-semibold flex items-center text-lg';
+                saveAndBackBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Salvar e Voltar
+                `;
+                saveAndBackBtn.addEventListener('click', async () => {
+                    await saveAlbums(); // Salva as alterações antes de voltar
+                    renderAlbumPhotos(album.id);
+                });
+                appContainer.appendChild(saveAndBackBtn);
+
+                // Adiciona uma interface para adicionar novas URLs de imagem
+                const addPhotoSection = document.createElement('div');
+                addPhotoSection.className = 'bg-white p-4 rounded-xl shadow-lg mb-6';
+                addPhotoSection.innerHTML = `
+                    <h4 class="text-xl font-semibold mb-2 text-gray-700">Adicionar Nova Foto</h4>
+                    <div class="flex flex-col sm:flex-row items-center">
+                        <input type="text" id="new-photo-url" placeholder="Cole a URL da foto aqui" class="flex-grow w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 sm:mb-0 sm:mr-4">
+                        <button id="add-photo-btn" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                            Adicionar
+                        </button>
+                    </div>
+                `;
+                appContainer.appendChild(addPhotoSection);
+
+                // Lógica para adicionar uma nova foto
+                const newPhotoUrlInput = document.getElementById('new-photo-url');
+                const addPhotoBtn = document.getElementById('add-photo-btn');
+                addPhotoBtn.addEventListener('click', async () => {
+                    const newUrl = newPhotoUrlInput.value.trim();
+                    if (newUrl) {
+                        album.photos.push(newUrl);
+                        newPhotoUrlInput.value = '';
+                        renderPhotoListForEdit(album); // Renderiza novamente a lista de fotos no modo de edição
+                        await saveAlbums(); // Salva a alteração imediatamente
+                    }
+                });
+                
+                // Contêiner para as fotos arrastáveis
+                const photoListContainer = document.createElement('div');
+                photoListContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+                appContainer.appendChild(photoListContainer);
+
+                // Variável para armazenar o índice da foto que está sendo arrastada
+                let draggedItemIndex = null;
+
+                // Função interna para renderizar a lista de fotos no modo de edição
+                function renderPhotoListForEdit(album) {
+                    photoListContainer.innerHTML = '';
+                    album.photos.forEach((photoUrl, index) => {
+                        const photoItem = document.createElement('div');
+                        photoItem.className = 'bg-white rounded-xl shadow-md p-2 flex items-center group photo-item';
+                        photoItem.draggable = true;
+                        photoItem.dataset.index = index;
+
+                        photoItem.innerHTML = `
+                            <img src="${photoUrl}" alt="Foto ${index + 1}" class="w-16 h-16 object-cover rounded-lg mr-4">
+                            <span class="truncate flex-grow text-sm text-gray-700">${photoUrl}</span>
+                            <button class="remove-photo-btn ml-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition">
+                                &times;
+                            </button>
+                        `;
+                        
+                        // Evento para remover a foto
+                        photoItem.querySelector('.remove-photo-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            album.photos.splice(index, 1);
+                            renderPhotoListForEdit(album);
+                            await saveAlbums(); // Salva a alteração imediatamente
+                        });
+                        
+                        // Lógica de arrastar e soltar
+                        photoItem.addEventListener('dragstart', (e) => {
+                            draggedItemIndex = index;
+                            setTimeout(() => e.target.classList.add('dragging'), 0);
+                        });
+
+                        photoItem.addEventListener('dragend', async (e) => {
+                            e.target.classList.remove('dragging');
+                            draggedItemIndex = null;
+                            await saveAlbums(); // Salva a alteração após soltar a foto
+                        });
+
+                        photoItem.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            const targetItem = e.target.closest('.photo-item');
+                            if (!targetItem) return;
+
+                            const targetIndex = parseInt(targetItem.dataset.index);
+                            const draggedItem = photoListContainer.querySelector('.dragging');
+
+                            if (draggedItem && draggedItem !== targetItem) {
+                                const fromIndex = parseInt(draggedItem.dataset.index);
+                                if (fromIndex < targetIndex) {
+                                    photoListContainer.insertBefore(draggedItem, targetItem.nextSibling);
+                                } else {
+                                    photoListContainer.insertBefore(draggedItem, targetItem);
+                                }
+                            }
+                        });
+
+                        photoItem.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            const fromIndex = draggedItemIndex;
+                            const toItem = e.target.closest('.photo-item');
+                            const toIndex = toItem ? parseInt(toItem.dataset.index) : fromIndex;
+
+                            if (fromIndex !== toIndex) {
+                                const [draggedPhoto] = album.photos.splice(fromIndex, 1);
+                                album.photos.splice(toIndex, 0, draggedPhoto);
+                                renderPhotoListForEdit(album);
+                            }
+                        });
+
+                        photoListContainer.appendChild(photoItem);
+                    });
+                }
+
+                renderPhotoListForEdit(album);
+            }
+
+            /**
+             * Função para abrir o modal (lightbox) com a imagem ampliada.
+             * @param {string} imageUrl - A URL da imagem a ser exibida.
+             */
+            function openLightbox(imageUrl) {
+                modalImage.src = imageUrl;
+                lightboxModal.classList.add('is-active');
+            }
+
+            /**
+             * Função para fechar o modal (lightbox).
+             */
+            function closeLightbox() {
+                lightboxModal.classList.remove('is-active');
+            }
+
+            // Eventos para fechar o modal
+            closeModalBtn.addEventListener('click', closeLightbox);
+            lightboxModal.addEventListener('click', (e) => {
+                if (e.target.id === 'lightbox-modal') {
+                    closeLightbox();
+                }
+            });
+
+            // Inicia o site carregando os dados do Firebase
+            loadAlbums();
+        });
+    </script>
+</body>
+</html>
