@@ -1,489 +1,522 @@
-<script>
-    document.addEventListener('DOMContentLoaded', () => {
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyAQxhEQFrL4L2W_8B5oYZt12UoE8ojSkV0",
-            authDomain: "galeria-d93d9.firebaseapp.com",
-            databaseURL: "https://galeria-d93d9-default-rtdb.firebaseio.com",
-            projectId: "galeria-d93d9",
-            storageBucket: "galeria-d93d9.firebasestorage.app",
-            messagingSenderId: "943324121087",
-            appId: "1:943324121087:web:5204e0311a56ebc938c9ca",
-            measurementId: "G-R8CCVM1PV5"
-        };
-
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
-        const storage = firebase.storage();
-        const albumsRef = db.collection('galeria').doc('principal');
-        const storageRef = storage.ref();
-
-        let albums = []; 
-
-        async function saveAlbums() {
-            try {
-                await albumsRef.set({ albums });
-                console.log("Álbuns salvos com sucesso no Firebase!");
-            } catch (e) {
-                console.error("Erro ao salvar álbuns: ", e);
-            }
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nyc e Ni</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
         }
 
-        async function getDownloadUrl(localPath) {
-            try {
-                const fileRef = storageRef.child(localPath);
-                const url = await fileRef.getDownloadURL();
-                return url;
-            } catch (e) {
-                console.error(`Erro ao obter a URL para ${localPath}: `, e);
-                return 'https://via.placeholder.com/800x600?text=Imagem+Nao+Encontrada';
-            }
+        /* Estilo do modal (lightbox) para exibir as fotos em tela cheia */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.85);
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0;
+            pointer-events: none;
         }
 
-        async function loadAlbums() {
-            try {
-                const doc = await albumsRef.get();
-                if (doc.exists && doc.data().albums) {
-                    albums = doc.data().albums;
-                    console.log("Álbuns carregados do Firebase!");
-                } else {
-                    const initialAlbums = [
-                        {
-                            id: 'viagem-rio',
-                            title: 'Viagem ao Rio de Janeiro',
-                            coverImage: 'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',    
-                            photos: [
-                                'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',
-                                'https://placehold.co/800x600/fecaca/991b1b?text=Rio+2',
-                                'https://placehold.co/800x600/fecaca/991b1b?text=Rio+3',
-                                'https://placehold.co/800x600/fecaca/991b1b?text=Rio+4',
-                                'https://placehold.co/800x600/fecaca/991b1b?text=Rio+5'
-                            ]
-                        },
-                        {
-                            id: 'aniversario-joao',
-                            title: 'Aniversário do João',
-                            coverImage: 'torres/WhatsApp%20Image%202025-09-03%20at%2017.05.45%20(1).jpeg',
-                            photos: [
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.57%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.10%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.57.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.58%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.58%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.58%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.58.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.59%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.59%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.24.59.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.25.00.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.10%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.10.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.11%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.11.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.12%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.12%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.12.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.13%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.13%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.13.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.14%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.14.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.15%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.15.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.16%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.16%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.16.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.17%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.17%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.17.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.18%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.26.18.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.26%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.26%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.26.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.27%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.27%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.27.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.28%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.28%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.28%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.28.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.29%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.29%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.29%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.29.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.30%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.30%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.30%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.30.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.31%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.31%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.31%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.31.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.32%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.32%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.32.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.33%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.33%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.33%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.33.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.34%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.34%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.34.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.35%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.35%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.35.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.36%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.27.36.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.06.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.07%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.07%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.07.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.28%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.28%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.28.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.29%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.29%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.29.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.57.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.58%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.58.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.59%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.59%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.59%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.28.59.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.00%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.00%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.00.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.01%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.01%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.01%20(3).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.01.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.02%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.02.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.04.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.58%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.58%20(2).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.58.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.29.59.jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.30.48%20(1).jpeg',
-                                'torres/WhatsApp%20Image%202025-09-04%20at%2016.30.48.jpeg'
-                            ]
-                        },
-                        {
-                            id: 'passeio-parque',
-                            title: 'Passeio no Parque',
-                            coverImage: 'https://placehold.co/400x300/d1fae5/065f46?text=Capa+Parque',
-                            photos: [
-                                'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+1',
-                                'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+2',
-                                'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+3',
-                                'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+4'
-                            ]
-                        },
-                    ];
-                    albums = initialAlbums;
-                    saveAlbums(); 
-                }
-                renderAlbums();
-            } catch (e) {
-                console.error("Erro ao carregar álbuns: ", e);
-                albums = initialAlbums;
-                renderAlbums();
-            }
+        .modal.is-active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-image {
+            transform: scale(0.95);
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .modal.is-active .modal-image {
+            transform: scale(1);
+        }
+
+        .back-button {
+            transition: transform 0.2s;
         }
         
-        const appContainer = document.getElementById('app-container');
-        const mainTitle = document.getElementById('main-title');
-        const mainSubtitle = document.getElementById('main-subtitle');
-        const lightboxModal = document.getElementById('lightbox-modal');
-        const modalImage = document.getElementById('modal-image');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-
-        async function renderAlbums() {
-            appContainer.innerHTML = '';
-            mainTitle.textContent = 'Galeria de Álbuns';
-            mainSubtitle.textContent = 'Fotos Nyc e Ni';
-
-            const albumsGrid = document.createElement('div');
-            albumsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8';
-
-            const albumPromises = albums.map(async album => {
-                let coverUrl = album.coverImage;
-                if (!coverUrl.startsWith('http')) {
-                    coverUrl = await getDownloadUrl(coverUrl);
-                }
-                return { ...album, coverUrl };
-            });
-
-            const albumsWithUrls = await Promise.all(albumPromises);
-
-            albumsWithUrls.forEach(album => {
-                const albumCard = document.createElement('div');
-                albumCard.className = 'bg-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer';
-                albumCard.innerHTML = `
-                    <img src="${album.coverUrl}" alt="Capa do Álbum: ${album.title}" class="w-full h-48 object-cover rounded-t-xl">
-                    <div class="p-5 text-center">
-                        <h3 class="text-xl font-semibold text-gray-700">${album.title}</h3>
-                    </div>
-                `;
-                albumCard.addEventListener('click', () => renderAlbumPhotos(album.id));
-                albumsGrid.appendChild(albumCard);
-            });
-
-            appContainer.appendChild(albumsGrid);
+        .back-button:hover {
+            transform: translateX(-5px);
         }
 
-        async function renderAlbumPhotos(albumId) {
-            const album = albums.find(a => a.id === albumId);
-            if (!album) return; 
-
-            appContainer.innerHTML = '';
-            mainTitle.textContent = album.title;
-            mainSubtitle.textContent = `${album.photos.length} Fotos`;
-
-            const backBtn = document.createElement('button');
-            backBtn.className = 'back-button text-gray-600 hover:text-gray-800 font-semibold flex items-center text-lg';
-            backBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                Voltar para os Álbuns
-            `;
-            backBtn.addEventListener('click', renderAlbums);
-
-            const editBtn = document.createElement('button');
-            editBtn.className = 'ml-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center text-lg';
-            editBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232a2 2 0 012.828 0l.536.536a2 2 0 010 2.828l-7.07 7.07a2 2 0 01-.818.536l-3.324.966a1 1 0 01-1.21-.86L4.2 14.536a2 2 0 01.536-.818l7.07-7.07z" />
-                </svg>
-                Editar Álbum
-            `;
-            editBtn.addEventListener('click', () => renderEditMode(album));
-
-            const headerButtons = document.createElement('div');
-            headerButtons.className = 'flex items-center mb-6';
-            headerButtons.appendChild(backBtn);
-            headerButtons.appendChild(editBtn); 
-            appContainer.appendChild(headerButtons);
-
-            const photosGrid = document.createElement('div');
-            photosGrid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
-
-            // ATUALIZAÇÃO: Itera sobre as URLs das fotos e obtém o link de download se necessário
-            const photoPromises = album.photos.map(async photoUrl => {
-                if (!photoUrl.startsWith('http')) {
-                    return await getDownloadUrl(photoUrl);
-                }
-                return photoUrl;
-            });
-            const photoUrls = await Promise.all(photoPromises);
-
-            photoUrls.forEach(photoUrl => {
-                const photoCard = document.createElement('div');
-                photoCard.className = 'overflow-hidden rounded-xl shadow-md cursor-pointer transform hover:scale-105 transition-transform duration-300';
-                photoCard.innerHTML = `
-                    <img src="${photoUrl}" alt="Foto do Álbum" class="w-full h-56 object-cover">
-                `;
-                photoCard.addEventListener('click', () => openLightbox(photoUrl));
-                photosGrid.appendChild(photoCard);
-            });
-
-            appContainer.appendChild(photosGrid);
+        /* Estilos para o modo de edição */
+        .photo-item {
+            cursor: grab;
+        }
+        .photo-item.dragging {
+            opacity: 0.5;
+            border: 2px dashed #9ca3af;
         }
 
-        function renderEditMode(album) {
-            appContainer.innerHTML = '';
-            mainTitle.textContent = `Editando: ${album.title}`;
-            mainSubtitle.textContent = 'Arraste para reordenar, remova ou adicione novas fotos.';
+        /* Estilo para a área de drop */
+        .drop-zone {
+            border: 2px dashed #9ca3af;
+            background-color: #e5e7eb;
+            transition: background-color 0.2s;
+        }
 
-            const saveAndBackBtn = document.createElement('button');
-            saveAndBackBtn.className = 'back-button mb-6 text-green-600 hover:text-green-800 font-semibold flex items-center text-lg';
-            saveAndBackBtn.innerHTML = `
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Salvar e Voltar
-            `;
-            saveAndBackBtn.addEventListener('click', async () => {
-                await saveAlbums(); 
-                renderAlbumPhotos(album.id);
-            });
-            appContainer.appendChild(saveAndBackBtn);
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 
-            const addPhotoSection = document.createElement('div');
-            addPhotoSection.className = 'bg-white p-4 rounded-xl shadow-lg mb-6';
-            addPhotoSection.innerHTML = `
-                <h4 class="text-xl font-semibold mb-2 text-gray-700">Adicionar Nova Foto</h4>
-                <div class="flex flex-col sm:flex-row items-center">
-                    <input type="text" id="new-photo-url" placeholder="Arraste uma foto aqui ou cole a URL" class="flex-grow w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 sm:mb-0 sm:mr-4">
-                    <button id="add-photo-btn" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-                        Adicionar
-                    </button>
-                </div>
-            `;
-            appContainer.appendChild(addPhotoSection);
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
 
-            const newPhotoUrlInput = document.getElementById('new-photo-url');
-            const addPhotoBtn = document.getElementById('add-photo-btn');
+    <header class="w-full max-w-5xl text-center mb-8">
+        <h1 id="main-title" class="text-4xl font-extrabold text-gray-800 mb-2">Galeria de Álbuns</h1>
+        <p id="main-subtitle" class="text-xl text-gray-600">fotos nyc e ni</p>
+    </header>   
 
-            // --- LÓGICA DE DRAG AND DROP ---
-            newPhotoUrlInput.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.target.classList.add('drop-zone');
-            });
-            newPhotoUrlInput.addEventListener('dragleave', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.target.classList.remove('drop-zone');
-            });
-            newPhotoUrlInput.addEventListener('drop', async (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                e.target.classList.remove('drop-zone');
-                
-                const file = e.dataTransfer.files[0];
-                if (file && file.type.startsWith('image/')) {
-                    e.target.value = 'Enviando...';
-                    addPhotoBtn.disabled = true;
+    <main id="app-container" class="w-full max-w-5xl">
+        <p class="text-center text-gray-500">Carregando álbuns...</p>
+    </main>
 
-                    try {
-                        const newFileName = `uploads/${Date.now()}-${file.name}`;
-                        const uploadTask = storageRef.child(newFileName).put(file);
+    <div id="lightbox-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50">
+        <div class="relative w-full max-w-4xl max-h-full">
+            <img id="modal-image" class="modal-image w-full h-auto object-contain rounded-xl shadow-2xl" src="" alt="Foto Ampliada">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-white text-3xl font-bold bg-gray-800 bg-opacity-50 hover:bg-opacity-75 rounded-full w-10 h-10 flex items-center justify-center">
+                &times;
+            </button>
+        </div>
+    </div>
 
-                        await uploadTask;
-                        const downloadURL = await uploadTask.ref.getDownloadURL();
-                        
-                        e.target.value = downloadURL;
-                        addPhotoBtn.click();
-                    } catch (error) {
-                        console.error("Erro ao enviar a foto:", error);
-                        e.target.value = "Erro no upload!";
-                    } finally {
-                        addPhotoBtn.disabled = false;
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const firebaseConfig = {
+                apiKey: "AIzaSyAQxhEQFrL4L2W_8B5oYZt12UoE8ojSkV0",
+                authDomain: "galeria-d93d9.firebaseapp.com",
+                databaseURL: "https://galeria-d93d9-default-rtdb.firebaseio.com",
+                projectId: "galeria-d93d9",
+                storageBucket: "galeria-d93d9.firebasestorage.app",
+                messagingSenderId: "943324121087",
+                appId: "1:943324121087:web:5204e0311a56ebc938c9ca",
+                measurementId: "G-R8CCVM1PV5"
+            };
+
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const storage = firebase.storage();
+            const albumsRef = db.collection('galeria').doc('principal');
+            const storageRef = storage.ref();
+
+            let albums = []; 
+
+            async function saveAlbums() {
+                try {
+                    await albumsRef.set({ albums });
+                    console.log("Álbuns salvos com sucesso no Firebase!");
+                } catch (e) {
+                    console.error("Erro ao salvar álbuns: ", e);
+                }
+            }
+
+            async function getDownloadUrl(localPath) {
+                try {
+                    const fileRef = storageRef.child(localPath);
+                    const url = await fileRef.getDownloadURL();
+                    return url;
+                } catch (e) {
+                    console.error(`Erro ao obter a URL para ${localPath}: `, e);
+                    return 'https://via.placeholder.com/800x600?text=Imagem+Nao+Encontrada';
+                }
+            }
+
+            async function loadAlbums() {
+                try {
+                    const doc = await albumsRef.get();
+                    if (doc.exists && doc.data().albums) {
+                        albums = doc.data().albums;
+                        console.log("Álbuns carregados do Firebase!");
+                    } else {
+                        albums = [
+                            {
+                                id: 'viagem-rio',
+                                title: 'Viagem ao Rio de Janeiro',
+                                coverImage: 'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',    
+                                photos: [
+                                    'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+2',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+3',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+4',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+5'
+                                ]
+                            },
+                            {
+                                id: 'aniversario-joao',
+                                title: 'Aniversário do João',
+                                coverImage: 'torres/WhatsApp%20Image%202025-09-03%20at%2017.05.45%20(1).jpeg',
+                                photos: [
+									'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+2',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+3',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+4',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+5'
+                                ]
+                            },
+                            {
+                                id: 'passeio-parque',
+                                title: 'Passeio no Parque',
+                                coverImage: 'https://placehold.co/400x300/d1fae5/065f46?text=Capa+Parque',
+                                photos: [
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+1',
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+2',
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+3',
+                                    'https://placehold.co/800x600/a7f3d0/065f46?text=Parque+4'
+                                ]
+                            },
+                        ];
+                        saveAlbums(); 
                     }
-                } else {
-                    e.target.value = "Por favor, solte apenas arquivos de imagem.";
+                    renderAlbums();
+                } catch (e) {
+                    console.error("Erro ao carregar álbuns: ", e);
+                    albums = initialAlbums;
+                    renderAlbums();
                 }
-            });
-            // --- FIM DA LÓGICA DE DRAG AND DROP ---
-
-
-            addPhotoBtn.addEventListener('click', async () => {
-                const newUrl = newPhotoUrlInput.value.trim();
-                if (newUrl && !newUrl.startsWith('Enviando')) {
-                    album.photos.push(newUrl);
-                    newPhotoUrlInput.value = '';
-                    renderPhotoListForEdit(album);
-                    await saveAlbums(); 
-                }
-            });
+            }
             
-            const photoListContainer = document.createElement('div');
-            photoListContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-            appContainer.appendChild(photoListContainer);
+            const appContainer = document.getElementById('app-container');
+            const mainTitle = document.getElementById('main-title');
+            const mainSubtitle = document.getElementById('main-subtitle');
+            const lightboxModal = document.getElementById('lightbox-modal');
+            const modalImage = document.getElementById('modal-image');
+            const closeModalBtn = document.getElementById('close-modal-btn');
 
-            let draggedItemIndex = null;
+            async function renderAlbums() {
+                appContainer.innerHTML = '';
+                mainTitle.textContent = 'Galeria de Álbuns';
+                mainSubtitle.textContent = 'Fotos Nyc e Ni';
 
-            async function renderPhotoListForEdit(album) {
-                photoListContainer.innerHTML = '';
-                
-                const photoPromises = album.photos.map(async (photoUrl, index) => {
-                    let displayUrl = photoUrl;
-                    if (!photoUrl.startsWith('http')) {
-                        displayUrl = await getDownloadUrl(photoUrl);
+                const albumsGrid = document.createElement('div');
+                albumsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8';
+
+                const albumPromises = albums.map(async album => {
+                    let coverUrl = album.coverImage;
+                    if (!coverUrl.startsWith('http')) {
+                        coverUrl = await getDownloadUrl(coverUrl);
                     }
-
-                    const photoItem = document.createElement('div');
-                    photoItem.className = 'bg-white rounded-xl shadow-md p-2 flex items-center group photo-item';
-                    photoItem.draggable = true;
-                    photoItem.dataset.index = index;
-
-                    photoItem.innerHTML = `
-                        <img src="${displayUrl}" alt="Foto ${index + 1}" class="w-16 h-16 object-cover rounded-lg mr-4">
-                        <span class="truncate flex-grow text-sm text-gray-700">${photoUrl}</span>
-                        <button class="remove-photo-btn ml-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition">
-                            &times;
-                        </button>
-                    `;
-                    
-                    photoItem.querySelector('.remove-photo-btn').addEventListener('click', async (e) => {
-                        e.stopPropagation();
-                        album.photos.splice(index, 1);
-                        renderPhotoListForEdit(album);
-                        await saveAlbums(); 
-                    });
-                    
-                    photoItem.addEventListener('dragstart', (e) => {
-                        draggedItemIndex = index;
-                        setTimeout(() => e.target.classList.add('dragging'), 0);
-                    });
-
-                    photoItem.addEventListener('dragend', async (e) => {
-                        e.target.classList.remove('dragging');
-                        draggedItemIndex = null;
-                        await saveAlbums(); 
-                    });
-
-                    photoItem.addEventListener('dragover', (e) => {
-                        e.preventDefault();
-                        const targetItem = e.target.closest('.photo-item');
-                        if (!targetItem) return;
-
-                        const targetIndex = parseInt(targetItem.dataset.index);
-                        const draggedItem = photoListContainer.querySelector('.dragging');
-
-                        if (draggedItem && draggedItem !== targetItem) {
-                            const fromIndex = parseInt(draggedItem.dataset.index);
-                            if (fromIndex < targetIndex) {
-                                photoListContainer.insertBefore(draggedItem, targetItem.nextSibling);
-                            } else {
-                                photoListContainer.insertBefore(draggedItem, targetItem);
-                            }
-                        }
-                    });
-
-                    photoItem.addEventListener('drop', (e) => {
-                        e.preventDefault();
-                        const fromIndex = draggedItemIndex;
-                        const toItem = e.target.closest('.photo-item');
-                        const toIndex = toItem ? parseInt(toItem.dataset.index) : fromIndex;
-
-                        if (fromIndex !== toIndex) {
-                            const [draggedPhoto] = album.photos.splice(fromIndex, 1);
-                            album.photos.splice(toIndex, 0, draggedPhoto);
-                            renderPhotoListForEdit(album);
-                        }
-                    });
-
-                    return photoItem;
+                    return { ...album, coverUrl };
                 });
 
-                const photoItems = await Promise.all(photoPromises);
-                photoItems.forEach(item => photoListContainer.appendChild(item));
+                const albumsWithUrls = await Promise.all(albumPromises);
+
+                albumsWithUrls.forEach(album => {
+                    const albumCard = document.createElement('div');
+                    albumCard.className = 'bg-white rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 cursor-pointer';
+                    albumCard.innerHTML = `
+                        <img src="${album.coverUrl}" alt="Capa do Álbum: ${album.title}" class="w-full h-48 object-cover rounded-t-xl">
+                        <div class="p-5 text-center">
+                            <h3 class="text-xl font-semibold text-gray-700">${album.title}</h3>
+                        </div>
+                    `;
+                    albumCard.addEventListener('click', () => renderAlbumPhotos(album.id));
+                    albumsGrid.appendChild(albumCard);
+                });
+
+                appContainer.appendChild(albumsGrid);
             }
 
-            renderPhotoListForEdit(album);
-        }
+            async function renderAlbumPhotos(albumId) {
+                const album = albums.find(a => a.id === albumId);
+                if (!album) return; 
 
-        function openLightbox(imageUrl) {
-            modalImage.src = imageUrl;
-            lightboxModal.classList.add('is-active');
-        }
+                appContainer.innerHTML = '';
+                mainTitle.textContent = album.title;
+                mainSubtitle.textContent = `${album.photos.length} Fotos`;
 
-        function closeLightbox() {
-            lightboxModal.classList.remove('is-active');
-        }
+                const backBtn = document.createElement('button');
+                backBtn.className = 'back-button text-gray-600 hover:text-gray-800 font-semibold flex items-center text-lg';
+                backBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Voltar para os Álbuns
+                `;
+                backBtn.addEventListener('click', renderAlbums);
 
-        closeModalBtn.addEventListener('click', closeLightbox);
-        lightboxModal.addEventListener('click', (e) => {
-            if (e.target.id === 'lightbox-modal') {
-                closeLightbox();
+                const editBtn = document.createElement('button');
+                editBtn.className = 'ml-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center text-lg';
+                editBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232a2 2 0 012.828 0l.536.536a2 2 0 010 2.828l-7.07 7.07a2 2 0 01-.818.536l-3.324.966a1 1 0 01-1.21-.86L4.2 14.536a2 2 0 01.536-.818l7.07-7.07z" />
+                    </svg>
+                    Editar Álbum
+                `;
+                editBtn.addEventListener('click', () => renderEditMode(album));
+
+                const headerButtons = document.createElement('div');
+                headerButtons.className = 'flex items-center mb-6';
+                headerButtons.appendChild(backBtn);
+                headerButtons.appendChild(editBtn); 
+                appContainer.appendChild(headerButtons);
+
+                const photosGrid = document.createElement('div');
+                photosGrid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
+
+                const photoPromises = album.photos.map(async photoUrl => {
+                    if (!photoUrl.startsWith('http')) {
+                        return await getDownloadUrl(photoUrl);
+                    }
+                    return photoUrl;
+                });
+                const photoUrls = await Promise.all(photoPromises);
+
+                photoUrls.forEach(photoUrl => {
+                    const photoCard = document.createElement('div');
+                    photoCard.className = 'overflow-hidden rounded-xl shadow-md cursor-pointer transform hover:scale-105 transition-transform duration-300';
+                    photoCard.innerHTML = `
+                        <img src="${photoUrl}" alt="Foto do Álbum" class="w-full h-56 object-cover">
+                    `;
+                    photoCard.addEventListener('click', () => openLightbox(photoUrl));
+                    photosGrid.appendChild(photoCard);
+                });
+
+                appContainer.appendChild(photosGrid);
             }
+
+            function renderEditMode(album) {
+                appContainer.innerHTML = '';
+                mainTitle.textContent = `Editando: ${album.title}`;
+                mainSubtitle.textContent = 'Arraste para reordenar, remova ou adicione novas fotos.';
+
+                const saveAndBackBtn = document.createElement('button');
+                saveAndBackBtn.className = 'back-button mb-6 text-green-600 hover:text-green-800 font-semibold flex items-center text-lg';
+                saveAndBackBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Salvar e Voltar
+                `;
+                saveAndBackBtn.addEventListener('click', async () => {
+                    await saveAlbums(); 
+                    renderAlbumPhotos(album.id);
+                });
+                appContainer.appendChild(saveAndBackBtn);
+
+                const addPhotoSection = document.createElement('div');
+                addPhotoSection.className = 'bg-white p-4 rounded-xl shadow-lg mb-6';
+                addPhotoSection.innerHTML = `
+                    <h4 class="text-xl font-semibold mb-2 text-gray-700">Adicionar Nova Foto</h4>
+                    <div class="flex flex-col sm:flex-row items-center">
+                        <input type="text" id="new-photo-url" placeholder="Arraste uma foto aqui ou cole a URL" class="flex-grow w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 sm:mb-0 sm:mr-4">
+                        <button id="add-photo-btn" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
+                            Adicionar
+                        </button>
+                    </div>
+                `;
+                appContainer.appendChild(addPhotoSection);
+
+                const newPhotoUrlInput = document.getElementById('new-photo-url');
+                const addPhotoBtn = document.getElementById('add-photo-btn');
+
+                // --- INÍCIO DA LÓGICA DE DRAG AND DROP ATUALIZADA ---
+                newPhotoUrlInput.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.target.classList.add('drop-zone');
+                });
+
+                newPhotoUrlInput.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.target.classList.remove('drop-zone');
+                });
+
+                newPhotoUrlInput.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.target.classList.remove('drop-zone');
+                    
+                    let fileToUpload = null;
+                    let fileName = `whatsapp-image-${Date.now()}.jpg`; // Nome padrão
+
+                    // Caso 1: Verifica se um arquivo foi arrastado do computador
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        const file = e.dataTransfer.files[0];
+                        if (file.type.startsWith('image/')) {
+                            fileToUpload = file;
+                            fileName = file.name;
+                        }
+                    } 
+                    // Caso 2: Se não for um arquivo, verifica se é conteúdo HTML (do WhatsApp)
+                    else {
+                        const html = e.dataTransfer.getData('text/html');
+                        if (html) {
+                            try {
+                                // Cria um elemento temporário para extrair o src da imagem do HTML
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = html;
+                                const img = tempDiv.querySelector('img');
+                                
+                                // Se encontrou uma imagem com um link blob
+                                if (img && img.src.startsWith('blob:')) {
+                                    // "Baixa" a imagem do link blob para a memória
+                                    const response = await fetch(img.src);
+                                    const imageBlob = await response.blob();
+                                    
+                                    // Cria um objeto File a partir do blob para poder fazer o upload
+                                    fileToUpload = new File([imageBlob], fileName, { type: imageBlob.type || 'image/jpeg' });
+                                }
+                            } catch (error) {
+                                console.error("Não foi possível processar o conteúdo arrastado:", error);
+                                e.target.value = "Erro ao processar imagem.";
+                                return;
+                            }
+                        }
+                    }
+
+                    // Se conseguimos obter um arquivo (de qualquer uma das formas), faz o upload
+                    if (fileToUpload) {
+                        e.target.value = 'Enviando imagem...';
+                        addPhotoBtn.disabled = true;
+
+                        try {
+                            const newFileName = `uploads/${Date.now()}-${fileName}`;
+                            const uploadTask = storageRef.child(newFileName).put(fileToUpload);
+
+                            await uploadTask;
+                            const downloadURL = await uploadTask.ref.getDownloadURL();
+                            
+                            e.target.value = downloadURL; // Coloca a URL final no input
+                            addPhotoBtn.click(); // Clica no botão "Adicionar" automaticamente
+                        } catch (error) {
+                            console.error("Erro ao enviar a foto:", error);
+                            e.target.value = "Erro no upload!";
+                        } finally {
+                            addPhotoBtn.disabled = false; // Reativa o botão
+                        }
+                    } else {
+                        e.target.value = "Por favor, solte apenas arquivos de imagem.";
+                    }
+                });
+                // --- FIM DA LÓGICA DE DRAG AND DROP ATUALIZADA ---
+
+                addPhotoBtn.addEventListener('click', async () => {
+                    const newUrl = newPhotoUrlInput.value.trim();
+                    if (newUrl && !newUrl.startsWith('Enviando')) {
+                        album.photos.push(newUrl);
+                        newPhotoUrlInput.value = '';
+                        renderPhotoListForEdit(album);
+                        await saveAlbums(); 
+                    }
+                });
+                
+                const photoListContainer = document.createElement('div');
+                photoListContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+                appContainer.appendChild(photoListContainer);
+
+                let draggedItemIndex = null;
+
+                async function renderPhotoListForEdit(album) {
+                    photoListContainer.innerHTML = '';
+                    
+                    const photoPromises = album.photos.map(async (photoUrl, index) => {
+                        let displayUrl = photoUrl;
+                        if (!photoUrl.startsWith('http')) {
+                            displayUrl = await getDownloadUrl(photoUrl);
+                        }
+
+                        const photoItem = document.createElement('div');
+                        photoItem.className = 'bg-white rounded-xl shadow-md p-2 flex items-center group photo-item';
+                        photoItem.draggable = true;
+                        photoItem.dataset.index = index;
+
+                        photoItem.innerHTML = `
+                            <img src="${displayUrl}" alt="Foto ${index + 1}" class="w-16 h-16 object-cover rounded-lg mr-4">
+                            <span class="truncate flex-grow text-sm text-gray-700">${photoUrl}</span>
+                            <button class="remove-photo-btn ml-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition">
+                                &times;
+                            </button>
+                        `;
+                        
+                        photoItem.querySelector('.remove-photo-btn').addEventListener('click', async (e) => {
+                            e.stopPropagation();
+                            album.photos.splice(index, 1);
+                            renderPhotoListForEdit(album);
+                            await saveAlbums(); 
+                        });
+                        
+                        photoItem.addEventListener('dragstart', (e) => {
+                            draggedItemIndex = index;
+                            setTimeout(() => e.target.classList.add('dragging'), 0);
+                        });
+
+                        photoItem.addEventListener('dragend', async (e) => {
+                            e.target.classList.remove('dragging');
+                            draggedItemIndex = null;
+                            await saveAlbums(); 
+                        });
+
+                        photoItem.addEventListener('dragover', (e) => {
+                            e.preventDefault();
+                            const targetItem = e.target.closest('.photo-item');
+                            if (!targetItem) return;
+
+                            const targetIndex = parseInt(targetItem.dataset.index);
+                            const draggedItem = photoListContainer.querySelector('.dragging');
+
+                            if (draggedItem && draggedItem !== targetItem) {
+                                const fromIndex = parseInt(draggedItem.dataset.index);
+                                if (fromIndex < targetIndex) {
+                                    photoListContainer.insertBefore(draggedItem, targetItem.nextSibling);
+                                } else {
+                                    photoListContainer.insertBefore(draggedItem, targetItem);
+                                }
+                            }
+                        });
+
+                        photoItem.addEventListener('drop', (e) => {
+                            e.preventDefault();
+                            const fromIndex = draggedItemIndex;
+                            const toItem = e.target.closest('.photo-item');
+                            const toIndex = toItem ? parseInt(toItem.dataset.index) : fromIndex;
+
+                            if (fromIndex !== toIndex) {
+                                const [draggedPhoto] = album.photos.splice(fromIndex, 1);
+                                album.photos.splice(toIndex, 0, draggedPhoto);
+                                renderPhotoListForEdit(album);
+                            }
+                        });
+
+                        return photoItem;
+                    });
+
+                    const photoItems = await Promise.all(photoPromises);
+                    photoItems.forEach(item => photoListContainer.appendChild(item));
+                }
+
+                renderPhotoListForEdit(album);
+            }
+
+            function openLightbox(imageUrl) {
+                modalImage.src = imageUrl;
+                lightboxModal.classList.add('is-active');
+            }
+
+            function closeLightbox() {
+                lightboxModal.classList.remove('is-active');
+            }
+
+            closeModalBtn.addEventListener('click', closeLightbox);
+            lightboxModal.addEventListener('click', (e) => {
+                if (e.target.id === 'lightbox-modal') {
+                    closeLightbox();
+                }
+            });
+
+            loadAlbums();
         });
-
-        loadAlbums();
-    });
-</script>
+    </script>
+</body>
+</html>
