@@ -319,8 +319,8 @@
 
                 const newPhotoUrlInput = document.getElementById('new-photo-url');
                 const addPhotoBtn = document.getElementById('add-photo-btn');
-
-                // --- INÍCIO DA LÓGICA DE DRAG AND DROP ATUALIZADA ---
+                
+                // --- INÍCIO DA LÓGICA DE DRAG AND DROP CORRIGIDA ---
                 newPhotoUrlInput.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -354,18 +354,13 @@
                         const html = e.dataTransfer.getData('text/html');
                         if (html) {
                             try {
-                                // Cria um elemento temporário para extrair o src da imagem do HTML
                                 const tempDiv = document.createElement('div');
                                 tempDiv.innerHTML = html;
                                 const img = tempDiv.querySelector('img');
                                 
-                                // Se encontrou uma imagem com um link blob
                                 if (img && img.src.startsWith('blob:')) {
-                                    // "Baixa" a imagem do link blob para a memória
                                     const response = await fetch(img.src);
                                     const imageBlob = await response.blob();
-                                    
-                                    // Cria um objeto File a partir do blob para poder fazer o upload
                                     fileToUpload = new File([imageBlob], fileName, { type: imageBlob.type || 'image/jpeg' });
                                 }
                             } catch (error) {
@@ -376,7 +371,6 @@
                         }
                     }
 
-                    // Se conseguimos obter um arquivo (de qualquer uma das formas), faz o upload
                     if (fileToUpload) {
                         e.target.value = 'Enviando imagem...';
                         addPhotoBtn.disabled = true;
@@ -385,22 +379,23 @@
                             const newFileName = `uploads/${Date.now()}-${fileName}`;
                             const uploadTask = storageRef.child(newFileName).put(fileToUpload);
 
-                            await uploadTask;
-                            const downloadURL = await uploadTask.ref.getDownloadURL();
+                            // CORREÇÃO APLICADA:
+                            const snapshot = await uploadTask;
+                            const downloadURL = await snapshot.ref.getDownloadURL();
                             
-                            e.target.value = downloadURL; // Coloca a URL final no input
-                            addPhotoBtn.click(); // Clica no botão "Adicionar" automaticamente
+                            e.target.value = downloadURL;
+                            addPhotoBtn.click();
                         } catch (error) {
                             console.error("Erro ao enviar a foto:", error);
                             e.target.value = "Erro no upload!";
                         } finally {
-                            addPhotoBtn.disabled = false; // Reativa o botão
+                            addPhotoBtn.disabled = false;
                         }
                     } else {
                         e.target.value = "Por favor, solte apenas arquivos de imagem.";
                     }
                 });
-                // --- FIM DA LÓGICA DE DRAG AND DROP ATUALIZADA ---
+                // --- FIM DA LÓGICA DE DRAG AND DROP CORRIGIDA ---
 
                 addPhotoBtn.addEventListener('click', async () => {
                     const newUrl = newPhotoUrlInput.value.trim();
