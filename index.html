@@ -58,8 +58,8 @@
 
         /* Estilo para a área de drop */
         .drop-zone {
-            border: 2px dashed #3b82f6; /* Azul para indicar área de drop ativa */
-            background-color: #eff6ff;
+            border: 2px dashed #9ca3af;
+            background-color: #e5e7eb;
             transition: background-color 0.2s;
         }
 
@@ -98,7 +98,7 @@
                 authDomain: "galeria-d93d9.firebaseapp.com",
                 databaseURL: "https://galeria-d93d9-default-rtdb.firebaseio.com",
                 projectId: "galeria-d93d9",
-                storageBucket: "galeria-d93d9.appspot.com",
+                storageBucket: "galeria-d93d9.firebasestorage.app",
                 messagingSenderId: "943324121087",
                 appId: "1:943324121087:web:5204e0311a56ebc938c9ca",
                 measurementId: "G-R8CCVM1PV5"
@@ -128,8 +128,7 @@
                     return url;
                 } catch (e) {
                     console.error(`Erro ao obter a URL para ${localPath}: `, e);
-                    // Retorna uma URL de erro para que o usuário saiba que algo falhou
-                    return 'https://via.placeholder.com/800x600/f87171/ffffff?text=Erro+ao+Carregar';
+                    return 'https://via.placeholder.com/800x600?text=Imagem+Nao+Encontrada';
                 }
             }
 
@@ -144,7 +143,7 @@
                             {
                                 id: 'viagem-rio',
                                 title: 'Viagem ao Rio de Janeiro',
-                                coverImage: 'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',   
+                                coverImage: 'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',    
                                 photos: [
                                     'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',
                                     'https://placehold.co/800x600/fecaca/991b1b?text=Rio+2',
@@ -159,10 +158,10 @@
                                 coverImage: 'torres/WhatsApp%20Image%202025-09-03%20at%2017.05.45%20(1).jpeg',
                                 photos: [
 									'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',
-                                    'https://placehold.co/800x600/fecaca/991b1b?text=Aniversario+2',
-                                    'https://placehold.co/800x600/fecaca/991b1b?text=Aniversario+3',
-                                    'https://placehold.co/800x600/fecaca/991b1b?text=Aniversario+4',
-                                    'https://placehold.co/800x600/fecaca/991b1b?text=Aniversario+5'
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+2',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+3',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+4',
+                                    'https://placehold.co/800x600/fecaca/991b1b?text=Rio+5'
                                 ]
                             },
                             {
@@ -182,7 +181,8 @@
                     renderAlbums();
                 } catch (e) {
                     console.error("Erro ao carregar álbuns: ", e);
-                    renderAlbums(); // Tenta renderizar mesmo em caso de erro
+                    albums = initialAlbums;
+                    renderAlbums();
                 }
             }
             
@@ -203,7 +203,7 @@
 
                 const albumPromises = albums.map(async album => {
                     let coverUrl = album.coverImage;
-                    if (coverUrl && !coverUrl.startsWith('http')) {
+                    if (!coverUrl.startsWith('http')) {
                         coverUrl = await getDownloadUrl(coverUrl);
                     }
                     return { ...album, coverUrl };
@@ -227,76 +227,63 @@
                 appContainer.appendChild(albumsGrid);
             }
 
-            // =========================================================================
-            //  FUNÇÃO CORRIGIDA PARA CARREGAMENTO PROGRESSIVO
-            // =========================================================================
             async function renderAlbumPhotos(albumId) {
                 const album = albums.find(a => a.id === albumId);
-                if (!album) return;
+                if (!album) return; 
 
                 appContainer.innerHTML = '';
                 mainTitle.textContent = album.title;
                 mainSubtitle.textContent = `${album.photos.length} Fotos`;
 
-                // --- Cria os botões de voltar e editar ---
                 const backBtn = document.createElement('button');
                 backBtn.className = 'back-button text-gray-600 hover:text-gray-800 font-semibold flex items-center text-lg';
-                backBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>Voltar para os Álbuns`;
+                backBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                    Voltar para os Álbuns
+                `;
                 backBtn.addEventListener('click', renderAlbums);
 
                 const editBtn = document.createElement('button');
                 editBtn.className = 'ml-4 text-blue-600 hover:text-blue-800 font-semibold flex items-center text-lg';
-                editBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232a2 2 0 012.828 0l.536.536a2 2 0 010 2.828l-7.07 7.07a2 2 0 01-.818.536l-3.324.966a1 1 0 01-1.21-.86L4.2 14.536a2 2 0 01.536-.818l7.07-7.07z" /></svg>Editar Álbum`;
+                editBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232a2 2 0 012.828 0l.536.536a2 2 0 010 2.828l-7.07 7.07a2 2 0 01-.818.536l-3.324.966a1 1 0 01-1.21-.86L4.2 14.536a2 2 0 01.536-.818l7.07-7.07z" />
+                    </svg>
+                    Editar Álbum
+                `;
                 editBtn.addEventListener('click', () => renderEditMode(album));
 
                 const headerButtons = document.createElement('div');
                 headerButtons.className = 'flex items-center mb-6';
                 headerButtons.appendChild(backBtn);
-                headerButtons.appendChild(editBtn);
+                headerButtons.appendChild(editBtn); 
                 appContainer.appendChild(headerButtons);
 
-                // --- Início da Lógica de Carregamento Progressivo ---
-
-                // 1. Cria o contêiner da grade de fotos e o adiciona à página IMEDIATAMENTE.
                 const photosGrid = document.createElement('div');
                 photosGrid.className = 'grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6';
-                appContainer.appendChild(photosGrid);
 
-                // 2. Para cada foto no álbum, cria e adiciona um "esqueleto" de carregamento.
-                // Isso dá ao usuário um feedback visual instantâneo.
-                album.photos.forEach((_, index) => {
-                    const placeholderCard = document.createElement('div');
-                    // Usamos a classe 'animate-pulse' do Tailwind para uma animação sutil.
-                    placeholderCard.className = 'w-full h-56 bg-gray-300 rounded-xl animate-pulse';
-                    placeholderCard.dataset.photoIndex = index; // Identificador para substituir depois
-                    photosGrid.appendChild(placeholderCard);
-                });
-
-                // 3. Agora, processa cada foto individualmente para buscar a URL real.
-                album.photos.forEach(async (photoUrl, index) => {
-                    let finalUrl;
-                    if (photoUrl && !photoUrl.startsWith('http')) {
-                        finalUrl = await getDownloadUrl(photoUrl);
-                    } else {
-                        finalUrl = photoUrl;
+                const photoPromises = album.photos.map(async photoUrl => {
+                    if (!photoUrl.startsWith('http')) {
+                        return await getDownloadUrl(photoUrl);
                     }
+                    return photoUrl;
+                });
+                const photoUrls = await Promise.all(photoPromises);
 
-                    // Cria o card da foto real
+                photoUrls.forEach(photoUrl => {
                     const photoCard = document.createElement('div');
                     photoCard.className = 'overflow-hidden rounded-xl shadow-md cursor-pointer transform hover:scale-105 transition-transform duration-300';
-                    photoCard.innerHTML = `<img src="${finalUrl}" alt="Foto do Álbum" class="w-full h-56 object-cover">`;
-                    photoCard.addEventListener('click', () => openLightbox(finalUrl));
-
-                    // 4. Encontra o esqueleto correspondente e o substitui pelo card da foto real.
-                    const placeholderToReplace = photosGrid.querySelector(`[data-photo-index='${index}']`);
-                    if (placeholderToReplace) {
-                        photosGrid.replaceChild(photoCard, placeholderToReplace);
-                    }
+                    photoCard.innerHTML = `
+                        <img src="${photoUrl}" alt="Foto do Álbum" class="w-full h-56 object-cover">
+                    `;
+                    photoCard.addEventListener('click', () => openLightbox(photoUrl));
+                    photosGrid.appendChild(photoCard);
                 });
+
+                appContainer.appendChild(photosGrid);
             }
-            // =========================================================================
-            //  FIM DA FUNÇÃO CORRIGIDA
-            // =========================================================================
 
             function renderEditMode(album) {
                 appContainer.innerHTML = '';
@@ -305,7 +292,12 @@
 
                 const saveAndBackBtn = document.createElement('button');
                 saveAndBackBtn.className = 'back-button mb-6 text-green-600 hover:text-green-800 font-semibold flex items-center text-lg';
-                saveAndBackBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>Salvar e Voltar`;
+                saveAndBackBtn.innerHTML = `
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Salvar e Voltar
+                `;
                 saveAndBackBtn.addEventListener('click', async () => {
                     await saveAlbums(); 
                     renderAlbumPhotos(album.id);
@@ -315,11 +307,11 @@
                 const addPhotoSection = document.createElement('div');
                 addPhotoSection.className = 'bg-white p-4 rounded-xl shadow-lg mb-6';
                 addPhotoSection.innerHTML = `
-                    <h4 class="text-xl font-semibold mb-2 text-gray-700">Adicionar Nova(s) Foto(s)</h4>
+                    <h4 class="text-xl font-semibold mb-2 text-gray-700">Adicionar Nova Foto</h4>
                     <div class="flex flex-col sm:flex-row items-center">
-                        <input type="text" id="new-photo-url" placeholder="Arraste uma ou mais fotos para cá, ou cole uma URL" class="flex-grow w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 sm:mb-0 sm:mr-4">
+                        <input type="text" id="new-photo-url" placeholder="Arraste uma foto aqui ou cole a URL" class="flex-grow w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 sm:mb-0 sm:mr-4">
                         <button id="add-photo-btn" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-                            Adicionar por URL
+                            Adicionar
                         </button>
                     </div>
                 `;
@@ -328,49 +320,82 @@
                 const newPhotoUrlInput = document.getElementById('new-photo-url');
                 const addPhotoBtn = document.getElementById('add-photo-btn');
                 
-                newPhotoUrlInput.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); e.target.classList.add('drop-zone'); });
-                newPhotoUrlInput.addEventListener('dragleave', (e) => { e.preventDefault(); e.stopPropagation(); e.target.classList.remove('drop-zone'); });
+                // --- INÍCIO DA LÓGICA DE DRAG AND DROP CORRIGIDA ---
+                newPhotoUrlInput.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.target.classList.add('drop-zone');
+                });
+
+                newPhotoUrlInput.addEventListener('dragleave', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.target.classList.remove('drop-zone');
+                });
 
                 newPhotoUrlInput.addEventListener('drop', async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     e.target.classList.remove('drop-zone');
                     
-                    const files = e.dataTransfer.files;
-                    if (!files || files.length === 0) return;
+                    let fileToUpload = null;
+                    let fileName = `whatsapp-image-${Date.now()}.jpg`; // Nome padrão
 
-                    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
-                    if (imageFiles.length === 0) {
-                        e.target.value = "Por favor, solte apenas arquivos de imagem.";
-                        return;
+                    // Caso 1: Verifica se um arquivo foi arrastado do computador
+                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                        const file = e.dataTransfer.files[0];
+                        if (file.type.startsWith('image/')) {
+                            fileToUpload = file;
+                            fileName = file.name;
+                        }
+                    } 
+                    // Caso 2: Se não for um arquivo, verifica se é conteúdo HTML (do WhatsApp)
+                    else {
+                        const html = e.dataTransfer.getData('text/html');
+                        if (html) {
+                            try {
+                                const tempDiv = document.createElement('div');
+                                tempDiv.innerHTML = html;
+                                const img = tempDiv.querySelector('img');
+                                
+                                if (img && img.src.startsWith('blob:')) {
+                                    const response = await fetch(img.src);
+                                    const imageBlob = await response.blob();
+                                    fileToUpload = new File([imageBlob], fileName, { type: imageBlob.type || 'image/jpeg' });
+                                }
+                            } catch (error) {
+                                console.error("Não foi possível processar o conteúdo arrastado:", error);
+                                e.target.value = "Erro ao processar imagem.";
+                                return;
+                            }
+                        }
                     }
 
-                    e.target.value = `Enviando ${imageFiles.length} imagem(ns)...`;
-                    addPhotoBtn.disabled = true;
+                    if (fileToUpload) {
+                        e.target.value = 'Enviando imagem...';
+                        addPhotoBtn.disabled = true;
 
-                    try {
-                        const uploadPromises = imageFiles.map(file => {
-                            const newFileName = `uploads/${Date.now()}-${file.name}`;
-                            const fileRef = storageRef.child(newFileName);
-                            return fileRef.put(file);
-                        });
+                        try {
+                            const newFileName = `uploads/${Date.now()}-${fileName}`;
+                            const uploadTask = storageRef.child(newFileName).put(fileToUpload);
 
-                        const snapshots = await Promise.all(uploadPromises);
-                        const downloadURLPromises = snapshots.map(snapshot => snapshot.ref.getDownloadURL());
-                        const newUrls = await Promise.all(downloadURLPromises);
-
-                        album.photos.push(...newUrls);
-                        await saveAlbums();
-                        renderPhotoListForEdit(album);
-                        e.target.value = '';
-
-                    } catch (error) {
-                        console.error("Erro ao enviar as fotos:", error);
-                        e.target.value = "Ocorreu um erro no upload.";
-                    } finally {
-                        addPhotoBtn.disabled = false;
+                            // CORREÇÃO APLICADA:
+                            const snapshot = await uploadTask;
+                            const downloadURL = await snapshot.ref.getDownloadURL();
+                            
+                            e.target.value = downloadURL;
+                            addPhotoBtn.click();
+                        } catch (error) {
+                            console.error("Erro ao enviar a foto:", error);
+                            e.target.value = "Erro no upload!";
+                        } finally {
+                            addPhotoBtn.disabled = false;
+                        }
+                    } else {
+                        e.target.value = "Por favor, solte apenas arquivos de imagem.";
                     }
                 });
+                // --- FIM DA LÓGICA DE DRAG AND DROP CORRIGIDA ---
 
                 addPhotoBtn.addEventListener('click', async () => {
                     const newUrl = newPhotoUrlInput.value.trim();
@@ -393,7 +418,7 @@
                     
                     const photoPromises = album.photos.map(async (photoUrl, index) => {
                         let displayUrl = photoUrl;
-                        if (photoUrl && !photoUrl.startsWith('http')) {
+                        if (!photoUrl.startsWith('http')) {
                             displayUrl = await getDownloadUrl(photoUrl);
                         }
 
@@ -402,7 +427,13 @@
                         photoItem.draggable = true;
                         photoItem.dataset.index = index;
 
-                        photoItem.innerHTML = `<img src="${displayUrl}" alt="Foto ${index + 1}" class="w-16 h-16 object-cover rounded-lg mr-4"><span class="truncate flex-grow text-sm text-gray-700">${photoUrl}</span><button class="remove-photo-btn ml-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition">&times;</button>`;
+                        photoItem.innerHTML = `
+                            <img src="${displayUrl}" alt="Foto ${index + 1}" class="w-16 h-16 object-cover rounded-lg mr-4">
+                            <span class="truncate flex-grow text-sm text-gray-700">${photoUrl}</span>
+                            <button class="remove-photo-btn ml-2 px-2 py-1 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 transition">
+                                &times;
+                            </button>
+                        `;
                         
                         photoItem.querySelector('.remove-photo-btn').addEventListener('click', async (e) => {
                             e.stopPropagation();
@@ -411,17 +442,27 @@
                             await saveAlbums(); 
                         });
                         
-                        photoItem.addEventListener('dragstart', (e) => { draggedItemIndex = index; setTimeout(() => e.target.classList.add('dragging'), 0); });
-                        photoItem.addEventListener('dragend', async (e) => { e.target.classList.remove('dragging'); draggedItemIndex = null; await saveAlbums(); });
+                        photoItem.addEventListener('dragstart', (e) => {
+                            draggedItemIndex = index;
+                            setTimeout(() => e.target.classList.add('dragging'), 0);
+                        });
+
+                        photoItem.addEventListener('dragend', async (e) => {
+                            e.target.classList.remove('dragging');
+                            draggedItemIndex = null;
+                            await saveAlbums(); 
+                        });
 
                         photoItem.addEventListener('dragover', (e) => {
                             e.preventDefault();
                             const targetItem = e.target.closest('.photo-item');
                             if (!targetItem) return;
+
+                            const targetIndex = parseInt(targetItem.dataset.index);
                             const draggedItem = photoListContainer.querySelector('.dragging');
+
                             if (draggedItem && draggedItem !== targetItem) {
                                 const fromIndex = parseInt(draggedItem.dataset.index);
-                                const targetIndex = parseInt(targetItem.dataset.index);
                                 if (fromIndex < targetIndex) {
                                     photoListContainer.insertBefore(draggedItem, targetItem.nextSibling);
                                 } else {
@@ -435,6 +476,7 @@
                             const fromIndex = draggedItemIndex;
                             const toItem = e.target.closest('.photo-item');
                             const toIndex = toItem ? parseInt(toItem.dataset.index) : fromIndex;
+
                             if (fromIndex !== toIndex) {
                                 const [draggedPhoto] = album.photos.splice(fromIndex, 1);
                                 album.photos.splice(toIndex, 0, draggedPhoto);
@@ -463,7 +505,9 @@
 
             closeModalBtn.addEventListener('click', closeLightbox);
             lightboxModal.addEventListener('click', (e) => {
-                if (e.target.id === 'lightbox-modal') closeLightbox();
+                if (e.target.id === 'lightbox-modal') {
+                    closeLightbox();
+                }
             });
 
             loadAlbums();
