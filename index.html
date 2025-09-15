@@ -58,8 +58,8 @@
 
         /* Estilo para a área de drop */
         .drop-zone {
-            border: 2px dashed #9ca3af;
-            background-color: #e5e7eb;
+            border: 2px dashed #3b82f6; /* Azul para indicar área de drop ativa */
+            background-color: #eff6ff;
             transition: background-color 0.2s;
         }
 
@@ -98,7 +98,7 @@
                 authDomain: "galeria-d93d9.firebaseapp.com",
                 databaseURL: "https://galeria-d93d9-default-rtdb.firebaseio.com",
                 projectId: "galeria-d93d9",
-                storageBucket: "galeria-d93d9.firebasestorage.app",
+                storageBucket: "galeria-d93d9.appspot.com",
                 messagingSenderId: "943324121087",
                 appId: "1:943324121087:web:5204e0311a56ebc938c9ca",
                 measurementId: "G-R8CCVM1PV5"
@@ -143,7 +143,7 @@
                             {
                                 id: 'viagem-rio',
                                 title: 'Viagem ao Rio de Janeiro',
-                                coverImage: 'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',    
+                                coverImage: 'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',   
                                 photos: [
                                     'WhatsApp%20Image%202025-08-29%20at%2018.19.19.png',
                                     'https://placehold.co/800x600/fecaca/991b1b?text=Rio+2',
@@ -307,11 +307,11 @@
                 const addPhotoSection = document.createElement('div');
                 addPhotoSection.className = 'bg-white p-4 rounded-xl shadow-lg mb-6';
                 addPhotoSection.innerHTML = `
-                    <h4 class="text-xl font-semibold mb-2 text-gray-700">Adicionar Nova Foto</h4>
+                    <h4 class="text-xl font-semibold mb-2 text-gray-700">Adicionar Nova(s) Foto(s)</h4>
                     <div class="flex flex-col sm:flex-row items-center">
-                        <input type="text" id="new-photo-url" placeholder="Arraste uma foto aqui ou cole a URL" class="flex-grow w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 sm:mb-0 sm:mr-4">
+                        <input type="text" id="new-photo-url" placeholder="Arraste uma ou mais fotos para cá, ou cole uma URL" class="flex-grow w-full sm:w-auto p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2 sm:mb-0 sm:mr-4">
                         <button id="add-photo-btn" class="w-full sm:w-auto px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-                            Adicionar
+                            Adicionar por URL
                         </button>
                     </div>
                 `;
@@ -320,7 +320,7 @@
                 const newPhotoUrlInput = document.getElementById('new-photo-url');
                 const addPhotoBtn = document.getElementById('add-photo-btn');
                 
-                // --- INÍCIO DA LÓGICA DE DRAG AND DROP CORRIGIDA ---
+                // --- INÍCIO DA LÓGICA DE DRAG AND DROP PARA MÚLTIPLOS ARQUIVOS ---
                 newPhotoUrlInput.addEventListener('dragover', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -338,64 +338,53 @@
                     e.stopPropagation();
                     e.target.classList.remove('drop-zone');
                     
-                    let fileToUpload = null;
-                    let fileName = `whatsapp-image-${Date.now()}.jpg`; // Nome padrão
-
-                    // Caso 1: Verifica se um arquivo foi arrastado do computador
-                    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-                        const file = e.dataTransfer.files[0];
-                        if (file.type.startsWith('image/')) {
-                            fileToUpload = file;
-                            fileName = file.name;
-                        }
-                    } 
-                    // Caso 2: Se não for um arquivo, verifica se é conteúdo HTML (do WhatsApp)
-                    else {
-                        const html = e.dataTransfer.getData('text/html');
-                        if (html) {
-                            try {
-                                const tempDiv = document.createElement('div');
-                                tempDiv.innerHTML = html;
-                                const img = tempDiv.querySelector('img');
-                                
-                                if (img && img.src.startsWith('blob:')) {
-                                    const response = await fetch(img.src);
-                                    const imageBlob = await response.blob();
-                                    fileToUpload = new File([imageBlob], fileName, { type: imageBlob.type || 'image/jpeg' });
-                                }
-                            } catch (error) {
-                                console.error("Não foi possível processar o conteúdo arrastado:", error);
-                                e.target.value = "Erro ao processar imagem.";
-                                return;
-                            }
-                        }
+                    const files = e.dataTransfer.files;
+                    if (!files || files.length === 0) {
+                        return;
                     }
 
-                    if (fileToUpload) {
-                        e.target.value = 'Enviando imagem...';
-                        addPhotoBtn.disabled = true;
+                    // Filtra para garantir que apenas imagens sejam processadas
+                    const imageFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
 
-                        try {
-                            const newFileName = `uploads/${Date.now()}-${fileName}`;
-                            const uploadTask = storageRef.child(newFileName).put(fileToUpload);
-
-                            // CORREÇÃO APLICADA:
-                            const snapshot = await uploadTask;
-                            const downloadURL = await snapshot.ref.getDownloadURL();
-                            
-                            e.target.value = downloadURL;
-                            addPhotoBtn.click();
-                        } catch (error) {
-                            console.error("Erro ao enviar a foto:", error);
-                            e.target.value = "Erro no upload!";
-                        } finally {
-                            addPhotoBtn.disabled = false;
-                        }
-                    } else {
+                    if (imageFiles.length === 0) {
                         e.target.value = "Por favor, solte apenas arquivos de imagem.";
+                        return;
+                    }
+
+                    e.target.value = `Enviando ${imageFiles.length} imagem(ns)...`;
+                    addPhotoBtn.disabled = true;
+
+                    try {
+                        // 1. Cria uma promessa de upload para cada arquivo
+                        const uploadPromises = imageFiles.map(file => {
+                            const newFileName = `uploads/${Date.now()}-${file.name}`;
+                            const fileRef = storageRef.child(newFileName);
+                            return fileRef.put(file); // Retorna a UploadTask (que se comporta como uma promessa)
+                        });
+
+                        // 2. Espera todas as promessas de upload terminarem
+                        const snapshots = await Promise.all(uploadPromises);
+
+                        // 3. Pega a URL de download de cada arquivo que foi enviado com sucesso
+                        const downloadURLPromises = snapshots.map(snapshot => snapshot.ref.getDownloadURL());
+                        const newUrls = await Promise.all(downloadURLPromises);
+
+                        // 4. Adiciona todas as novas URLs ao array de fotos do álbum
+                        album.photos.push(...newUrls); // Usa o operador spread (...) para adicionar todos os itens do array
+
+                        // 5. Salva e atualiza a interface
+                        await saveAlbums();
+                        renderPhotoListForEdit(album); // Re-renderiza a lista de edição
+                        e.target.value = ''; // Limpa o input
+
+                    } catch (error) {
+                        console.error("Erro ao enviar as fotos:", error);
+                        e.target.value = "Ocorreu um erro no upload.";
+                    } finally {
+                        addPhotoBtn.disabled = false; // Reabilita o botão, independentemente do resultado
                     }
                 });
-                // --- FIM DA LÓGICA DE DRAG AND DROP CORRIGIDA ---
+                // --- FIM DA LÓGICA DE DRAG AND DROP ---
 
                 addPhotoBtn.addEventListener('click', async () => {
                     const newUrl = newPhotoUrlInput.value.trim();
