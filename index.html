@@ -32,8 +32,7 @@
     </header>
 
     <main id="app-container" class="w-full max-w-5xl">
-        <p class="text-center text-gray-500">Carregando álbuns...</p>
-    </main>
+        </main>
 
     <div id="lightbox-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50">
         <div class="relative w-full max-w-4xl max-h-full">
@@ -73,9 +72,8 @@
             const storageRef = storage.ref();
 
             let albums = [];
+            let currentView = 'albums'; // 'albums' ou 'edit'
 
-            // A função updateAlbum não precisa mais atualizar a variável `albums` localmente.
-            // O `onSnapshot` fará isso automaticamente.
             async function updateAlbum(albumId, data) {
                 try {
                     await albumsCollectionRef.doc(albumId).update(data);
@@ -106,17 +104,13 @@
                 }
             }
 
-            // NOVO: Usa onSnapshot para escutar em tempo real
             function setupRealtimeListener() {
                 albumsCollectionRef.onSnapshot(snapshot => {
-                    if (snapshot.empty) {
-                        albums = [];
-                        console.log("Nenhum álbum encontrado.");
-                        appContainer.innerHTML = `<p class="text-center text-gray-500">Nenhum álbum encontrado. Crie o primeiro usando o botão no canto inferior direito.</p>`;
-                    } else {
-                        albums = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    albums = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // Apenas renderiza se a visualização atual for a galeria de álbuns
+                    if (currentView === 'albums') {
+                       renderAlbums();
                     }
-                    renderAlbums();
                 }, (error) => {
                     console.error("Erro fatal ao carregar álbuns: ", error);
                     appContainer.innerHTML = `<div class="text-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert"><p><strong>Erro de Conexão:</strong> Não foi possível carregar os álbuns.</p></div>`;
@@ -126,8 +120,11 @@
             const appContainer = document.getElementById('app-container');
             const mainTitle = document.getElementById('main-title');
             const mainSubtitle = document.getElementById('main-subtitle');
+            const fabContainer = document.getElementById('fab-container');
 
             function renderAlbums() {
+                currentView = 'albums';
+                fabContainer.style.display = 'block'; // Mostra o botão flutuante
                 appContainer.innerHTML = '';
                 mainTitle.textContent = 'Galeria de Álbuns';
                 mainSubtitle.textContent = 'Escolha um álbum para ver as fotos';
@@ -183,7 +180,6 @@
                             createdAt: firebase.firestore.FieldValue.serverTimestamp()
                         };
                         try {
-                            // A chamada de add já acionará o onSnapshot, que irá re-renderizar a lista.
                             await albumsCollectionRef.add(newAlbumData);
                         } catch(e) {
                             console.error("Erro ao criar álbum: ", e);
@@ -234,10 +230,13 @@
             }
 
             async function renderEditMode(albumId) {
+                currentView = 'edit';
+                fabContainer.style.display = 'none'; // Esconde o botão flutuante
                 const album = albums.find(a => a.id === albumId);
                 if (!album) {
                     alert("Álbum não encontrado!");
-                    return;
+                    // Retorna para a galeria se o álbum não for encontrado
+                    return startApp();
                 }
 
                 appContainer.innerHTML = '';
@@ -248,8 +247,8 @@
                 backBtn.className = 'back-button mb-6 text-blue-600 hover:text-blue-800 font-semibold flex items-center text-lg';
                 backBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H6" /></svg>Voltar para a Galeria`;
                 backBtn.addEventListener('click', () => {
-                     // Ao voltar, renderizamos a galeria principal, que já está em tempo real
-                     renderAlbums();
+                     // NOVO: Volta para a função de inicialização
+                     startApp();
                 });
                 appContainer.appendChild(backBtn);
 
@@ -273,8 +272,12 @@
 
             function renderPhotoListForEdit(album, container) {
                 container.innerHTML = '';
-                (album.photos || []).forEach((photo, index) => {
-                    const isCover = album.coverImageURL === photo.url;
+                // Encontra o álbum mais atualizado na lista principal `albums`
+                const currentAlbum = albums.find(a => a.id === album.id);
+                if (!currentAlbum) return;
+                
+                (currentAlbum.photos || []).forEach((photo, index) => {
+                    const isCover = currentAlbum.coverImageURL === photo.url;
                     const photoItem = document.createElement('div');
                     photoItem.className = 'bg-white rounded-xl shadow-md p-2 flex items-center group photo-item';
                     photoItem.draggable = true;
@@ -299,9 +302,9 @@
                     
                     photoItem.querySelector('[data-action="remove"]').addEventListener('click', async () => {
                         if (confirm('Deseja remover esta foto?')) {
-                            const updatedPhotos = album.photos.filter(p => p.path !== photo.path);
+                            const updatedPhotos = currentAlbum.photos.filter(p => p.path !== photo.path);
                             const updateData = { photos: updatedPhotos };
-                            if (album.coverImageURL === photo.url) {
+                            if (currentAlbum.coverImageURL === photo.url) {
                                 updateData.coverImageURL = updatedPhotos.length > 0 ? updatedPhotos[0].url : '';
                             }
                             await updateAlbum(album.id, updateData);
@@ -352,10 +355,17 @@
                 }
             }
             
+            // NOVO: Função para iniciar o aplicativo
+            function startApp() {
+                 appContainer.innerHTML = `<p class="text-center text-gray-500">Carregando álbuns...</p>`;
+                 setupRealtimeListener();
+            }
+
             const mainFab = document.getElementById('main-fab');
             mainFab.addEventListener('click', showAddAlbumModal);
 
-            setupRealtimeListener();
+            // Inicia o aplicativo
+            startApp();
         });
     </script>
 </body>
