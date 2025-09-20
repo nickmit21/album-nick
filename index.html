@@ -72,11 +72,14 @@
             const storageRef = storage.ref();
 
             let albums = [];
-            let currentView = 'albums'; // 'albums' ou 'edit'
+            let currentAlbum = null;
+            let currentView = 'albums';
+            let draggedPhoto = null;
 
             async function updateAlbum(albumId, data) {
                 try {
                     await albumsCollectionRef.doc(albumId).update(data);
+                    
                 } catch (e) {
                     console.error("Erro ao atualizar álbum: ", e);
                     alert("Ocorreu um erro ao salvar as alterações.");
@@ -109,6 +112,14 @@
                     albums = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                     if (currentView === 'albums') {
                         renderAlbums();
+                    } else if (currentView === 'edit' && currentAlbum) {
+                        const updatedAlbum = albums.find(a => a.id === currentAlbum.id);
+                        if (updatedAlbum) {
+                            currentAlbum = updatedAlbum;
+                            renderEditMode(currentAlbum.id);
+                        } else {
+                            startApp();
+                        }
                     }
                 }, (error) => {
                     console.error("Erro fatal ao carregar álbuns: ", error);
@@ -154,7 +165,7 @@
                         </div>
                     `;
                     
-                    albumCard.querySelector('.cursor-pointer').addEventListener('click', () => renderAlbumPhotos(album.id));
+                    albumCard.querySelector('.cursor-pointer').addEventListener('click', () => renderEditMode(album.id));
                     albumCard.querySelector('[data-action="edit-title"]').addEventListener('click', (e) => { e.stopPropagation(); showEditAlbumModal(album.id); });
                     albumCard.querySelector('[data-action="manage-photos"]').addEventListener('click', (e) => { e.stopPropagation(); renderEditMode(album.id); });
                     albumCard.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); deleteAlbumFromDb(album.id); });
@@ -162,10 +173,6 @@
                     albumsGrid.appendChild(albumCard);
                 });
                 appContainer.appendChild(albumsGrid);
-            }
-
-            function renderAlbumPhotos(albumId) {
-                renderEditMode(albumId);
             }
 
             function showAddAlbumModal() {
@@ -228,17 +235,62 @@
                 document.getElementById('cancel-btn').addEventListener('click', closeModal);
             }
 
+            function handleDragStart(e) {
+                this.style.opacity = '0.4';
+                draggedPhoto = this;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', this.dataset.index);
+            }
+
+            function handleDragOver(e) {
+                if (e.preventDefault) {
+                    e.preventDefault();
+                }
+                e.dataTransfer.dropEffect = 'move';
+                return false;
+            }
+
+            function handleDragEnter(e) {
+                this.classList.add('border-2', 'border-blue-500');
+            }
+
+            function handleDragLeave(e) {
+                this.classList.remove('border-2', 'border-blue-500');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                if (draggedPhoto !== this) {
+                    const fromIndex = parseInt(draggedPhoto.dataset.index);
+                    const toIndex = parseInt(this.dataset.index);
+                    
+                    const [photoToMove] = currentAlbum.photos.splice(fromIndex, 1);
+                    currentAlbum.photos.splice(toIndex, 0, photoToMove);
+
+                    renderPhotoListForEdit();
+                }
+                return false;
+            }
+
+            function handleDragEnd(e) {
+                this.style.opacity = '1';
+                document.querySelectorAll('.photo-item').forEach(item => {
+                    item.classList.remove('border-2', 'border-blue-500');
+                });
+            }
+
+
             async function renderEditMode(albumId) {
                 currentView = 'edit';
                 fabContainer.style.display = 'none';
-                const album = albums.find(a => a.id === albumId);
-                if (!album) {
+                currentAlbum = albums.find(a => a.id === albumId);
+                if (!currentAlbum) {
                     alert("Álbum não encontrado!");
                     return startApp();
                 }
 
                 appContainer.innerHTML = '';
-                mainTitle.textContent = `Editando: ${album.title}`;
+                mainTitle.textContent = `Editando: ${currentAlbum.title}`;
                 mainSubtitle.textContent = 'Adicione, remova, defina a capa ou reordene as fotos.';
 
                 const backBtn = document.createElement('button');
@@ -272,9 +324,10 @@
                     photoUploadInput.click();
                 });
 
-                photoUploadInput.addEventListener('change', (e) => handlePhotoUpload(e, album));
+                photoUploadInput.addEventListener('change', (e) => handlePhotoUpload(e, currentAlbum));
                 const saveButton = document.getElementById('save-button');
-                saveButton.addEventListener('click', () => {
+                saveButton.addEventListener('click', async () => {
+                    await saveChanges();
                     alert("Alterações salvas!");
                     startApp();
                 });
@@ -305,7 +358,7 @@
                 uploadArea.addEventListener('drop', (e) => {
                     let dt = e.dataTransfer;
                     let files = dt.files;
-                    handlePhotoUpload({ target: { files: files } }, album);
+                    handlePhotoUpload({ target: { files: files } }, currentAlbum);
                 }, false);
 
 
@@ -313,13 +366,14 @@
                 photoListContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
                 appContainer.appendChild(photoListContainer);
 
-                renderPhotoListForEdit(album, photoListContainer);
+                renderPhotoListForEdit();
             }
 
-            function renderPhotoListForEdit(album, container) {
+            function renderPhotoListForEdit() {
+                const container = appContainer.querySelector('.grid-cols-1');
+                if (!container || !currentAlbum) return;
+
                 container.innerHTML = '';
-                const currentAlbum = albums.find(a => a.id === album.id);
-                if (!currentAlbum) return;
                 
                 (currentAlbum.photos || []).forEach((photo, index) => {
                     const isCover = currentAlbum.coverImageURL === photo.url;
@@ -341,8 +395,15 @@
                         </div>
                     `;
                     
+                    photoItem.addEventListener('dragstart', handleDragStart);
+                    photoItem.addEventListener('dragover', handleDragOver);
+                    photoItem.addEventListener('dragenter', handleDragEnter);
+                    photoItem.addEventListener('dragleave', handleDragLeave);
+                    photoItem.addEventListener('drop', handleDrop);
+                    photoItem.addEventListener('dragend', handleDragEnd);
+
                     photoItem.querySelector('[data-action="set-cover"]').addEventListener('click', async () => {
-                        await updateAlbum(album.id, { coverImageURL: photo.url });
+                        await updateAlbum(currentAlbum.id, { coverImageURL: photo.url });
                     });
                     
                     photoItem.querySelector('[data-action="remove"]').addEventListener('click', async () => {
@@ -352,7 +413,9 @@
                             if (currentAlbum.coverImageURL === photo.url) {
                                 updateData.coverImageURL = updatedPhotos.length > 0 ? updatedPhotos[0].url : '';
                             }
-                            await updateAlbum(album.id, updateData);
+                            currentAlbum.photos = updatedPhotos;
+                            await updateAlbum(currentAlbum.id, updateData);
+                            renderPhotoListForEdit();
                         }
                     });
 
@@ -397,6 +460,16 @@
                             progressContainer.innerHTML = `<p class="text-green-500">${file.name} enviado com sucesso!</p>`;
                         }
                     );
+                }
+            }
+
+            async function saveChanges() {
+                if (currentAlbum) {
+                    const dataToUpdate = {
+                        photos: currentAlbum.photos,
+                        coverImageURL: currentAlbum.coverImageURL
+                    };
+                    await updateAlbum(currentAlbum.id, dataToUpdate);
                 }
             }
             
