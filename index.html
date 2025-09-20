@@ -1,406 +1,415 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nyc e Ni (Otimizado)</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #333; }
-        .modal { background-color: rgba(0, 0, 0, 0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: opacity 0.3s ease-in-out; opacity: 0; pointer-events: none; }
-        .modal.is-active { opacity: 1; pointer-events: auto; }
-        .modal-image { transform: scale(0.95); transition: transform 0.3s ease-in-out; }
-        .modal.is-active .modal-image { transform: scale(1); }
-        .back-button { transition: transform 0.2s; }
-        .back-button:hover { transform: translateX(-5px); }
-        .photo-item { cursor: grab; }
-        .photo-item.dragging { opacity: 0.5; border: 2px dashed #9ca3af; }
-    </style>
-    
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nyc e Ni (Otimizado)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #333; }
+        .modal { background-color: rgba(0, 0, 0, 0.85); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); transition: opacity 0.3s ease-in-out; opacity: 0; pointer-events: none; }
+        .modal.is-active { opacity: 1; pointer-events: auto; }
+        .modal-image { transform: scale(0.95); transition: transform 0.3s ease-in-out; }
+        .modal.is-active .modal-image { transform: scale(1); }
+        .back-button { transition: transform 0.2s; }
+        .back-button:hover { transform: translateX(-5px); }
+        .photo-item { cursor: grab; }
+        .photo-item.dragging { opacity: 0.5; border: 2px dashed #9ca3af; }
+    </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
 </head>
 <body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
 
-    <header class="w-full max-w-5xl text-center mb-8">
-        <h1 id="main-title" class="text-4xl font-extrabold text-gray-800 mb-2">Galeria de Álbuns</h1>
-        <p id="main-subtitle" class="text-xl text-gray-600">fotos nyc e ni</p>
-    </header>
+    <header class="w-full max-w-5xl text-center mb-8">
+        <h1 id="main-title" class="text-4xl font-extrabold text-gray-800 mb-2">Galeria de Álbuns</h1>
+        <p id="main-subtitle" class="text-xl text-gray-600">fotos nyc e ni</p>
+    </header>
 
-    <main id="app-container" class="w-full max-w-5xl">
-        </main>
+    <main id="app-container" class="w-full max-w-5xl">
+        </main>
 
-    <div id="lightbox-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50">
-        <div class="relative w-full max-w-4xl max-h-full">
-            <img id="modal-image" class="modal-image w-full h-auto object-contain rounded-xl shadow-2xl" src="" alt="Foto Ampliada">
-            <button id="close-modal-btn" class="absolute top-4 right-4 text-white text-3xl font-bold bg-gray-800 bg-opacity-50 hover:bg-opacity-75 rounded-full w-10 h-10 flex items-center justify-center">&times;</button>
-        </div>
-    </div>
+    <div id="lightbox-modal" class="modal fixed inset-0 flex items-center justify-center p-4 z-50">
+        <div class="relative w-full max-w-4xl max-h-full">
+            <img id="modal-image" class="modal-image w-full h-auto object-contain rounded-xl shadow-2xl" src="" alt="Foto Ampliada">
+            <button id="close-modal-btn" class="absolute top-4 right-4 text-white text-3xl font-bold bg-gray-800 bg-opacity-50 hover:bg-opacity-75 rounded-full w-10 h-10 flex items-center justify-center">&times;</button>
+        </div>
+    </div>
 
-    <div id="fab-container" class="fixed bottom-6 right-6 z-[100]">
-        <button id="main-fab" class="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M5 4a1 1 0 00-2 0v1h2V4zM16 4a1 1 0 00-2 0v1h2V4zM5 16a1 1 0 00-2 0v1h2v-1zM16 16a1 1 0 00-2 0v1h2v-1zM4 6a1 1 0 00-1 1v2h2V7a1 1 0 00-1-1zM17 6a1 1 0 00-1 1v2h2V7a1 1 0 00-1-1zM4 11a1 1 0 00-1 1v2h2v-2a1 1 0 00-1-1zM17 11a1 1 0 00-1 1v2h2v-2a1 1 0 00-1-1z" />
-                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm0 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clip-rule="evenodd" />
-                <path fill-rule="evenodd" d="M16 10a1 1 0 01-1 1H5a1 1 0 110-2h10a1 1 0 011 1z" clip-rule="evenodd" />
-            </svg>
-        </button>
-    </div>
+    <div id="fab-container" class="fixed bottom-6 right-6 z-[100]">
+        <button id="main-fab" class="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all duration-300 transform hover:scale-110 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M5 4a1 1 0 00-2 0v1h2V4zM16 4a1 1 0 00-2 0v1h2V4zM5 16a1 1 0 00-2 0v1h2v-1zM16 16a1 1 0 00-2 0v1h2v-1zM4 6a1 1 0 00-1 1v2h2V7a1 1 0 00-1-1zM17 6a1 1 0 00-1 1v2h2V7a1 1 0 00-1-1zM4 11a1 1 0 00-1 1v2h2v-2a1 1 0 00-1-1zM17 11a1 1 0 00-1 1v2h2v-2a1 1 0 00-1-1z" />
+                <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm0 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1z" clip-rule="evenodd" />
+                <path fill-rule="evenodd" d="M16 10a1 1 0 01-1 1H5a1 1 0 110-2h10a1 1 0 011 1z" clip-rule="evenodd" />
+            </svg>
+        </button>
+    </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const firebaseConfig = {
-                apiKey: "AIzaSyAQxhEQFrL4L2W_8B5oYZt12UoE8ojSkV0",
-                authDomain: "galeria-d93d9.firebaseapp.com",
-                databaseURL: "https://galeria-d93d9-default-rtdb.firebaseio.com",
-                projectId: "galeria-d93d9",
-                storageBucket: "galeria-d93d9.appspot.com",
-                messagingSenderId: "943324121087",
-                appId: "1:943324121087:web:5204e0311a56ebc938c9ca",
-                measurementId: "G-R8CCVM1PV5"
-            };
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const firebaseConfig = {
+                apiKey: "AIzaSyAQxhEQFrL4L2W_8B5oYZt12UoE8ojSkV0",
+                authDomain: "galeria-d93d9.firebaseapp.com",
+                databaseURL: "https://galeria-d93d9-default-rtdb.firebaseio.com",
+                projectId: "galeria-d93d9",
+                storageBucket: "galeria-d93d9.appspot.com",
+                messagingSenderId: "943324121087",
+                appId: "1:943324121087:web:5204e0311a56ebc938c9ca",
+                measurementId: "G-R8CCVM1PV5"
+            };
 
-            firebase.initializeApp(firebaseConfig);
-            const db = firebase.firestore();
-            const storage = firebase.storage();
+            firebase.initializeApp(firebaseConfig);
+            const db = firebase.firestore();
+            const storage = firebase.storage();
 
-            const albumsCollectionRef = db.collection('albums');
-            const storageRef = storage.ref();
+            const albumsCollectionRef = db.collection('albums');
+            const storageRef = storage.ref();
 
-            let albums = [];
-            let currentView = 'albums'; // 'albums' ou 'edit'
+            let albums = [];
+            let currentView = 'albums'; // 'albums' ou 'edit'
 
-            async function updateAlbum(albumId, data) {
-                try {
-                    await albumsCollectionRef.doc(albumId).update(data);
-                } catch (e) {
-                    console.error("Erro ao atualizar álbum: ", e);
-                    alert("Ocorreu um erro ao salvar as alterações.");
-                }
-            }
+            async function updateAlbum(albumId, data) {
+                try {
+                    await albumsCollectionRef.doc(albumId).update(data);
+                } catch (e) {
+                    console.error("Erro ao atualizar álbum: ", e);
+                    alert("Ocorreu um erro ao salvar as alterações.");
+                }
+            }
 
-            async function deleteAlbumFromDb(albumId) {
-                if (confirm('Tem certeza que deseja excluir este álbum? Esta ação não pode ser desfeita.')) {
-                    try {
-                        await albumsCollectionRef.doc(albumId).delete();
-                    } catch (e) {
-                        console.error("Erro ao excluir o álbum: ", e);
-                        alert("Não foi possível excluir o álbum.");
-                    }
-                }
-            }
-            
-            async function getDownloadUrl(localPath) {
-                if (!localPath || typeof localPath !== 'string') throw new Error("Caminho da imagem inválido.");
-                try {
-                    return await storageRef.child(localPath).getDownloadURL();
-                } catch (e) {
-                    console.error(`Erro ao obter a URL para ${localPath}: `, e);
-                    throw e;
-                }
-            }
+            async function deleteAlbumFromDb(albumId) {
+                if (confirm('Tem certeza que deseja excluir este álbum? Esta ação não pode ser desfeita.')) {
+                    try {
+                        await albumsCollectionRef.doc(albumId).delete();
+                    } catch (e) {
+                        console.error("Erro ao excluir o álbum: ", e);
+                        alert("Não foi possível excluir o álbum.");
+                    }
+                }
+            }
+            
+            async function getDownloadUrl(localPath) {
+                if (!localPath || typeof localPath !== 'string') throw new Error("Caminho da imagem inválido.");
+                try {
+                    return await storageRef.child(localPath).getDownloadURL();
+                } catch (e) {
+                    console.error(`Erro ao obter a URL para ${localPath}: `, e);
+                    throw e;
+                }
+            }
 
-            function setupRealtimeListener() {
-                albumsCollectionRef.onSnapshot(snapshot => {
-                    albums = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                    // Apenas renderiza se a visualização atual for a galeria de álbuns
-                    if (currentView === 'albums') {
-                       renderAlbums();
-                    }
-                }, (error) => {
-                    console.error("Erro fatal ao carregar álbuns: ", error);
-                    appContainer.innerHTML = `<div class="text-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert"><p><strong>Erro de Conexão:</strong> Não foi possível carregar os álbuns.</p></div>`;
-                });
-            }
-            
-            const appContainer = document.getElementById('app-container');
-            const mainTitle = document.getElementById('main-title');
-            const mainSubtitle = document.getElementById('main-subtitle');
-            const fabContainer = document.getElementById('fab-container');
+            function setupRealtimeListener() {
+                albumsCollectionRef.onSnapshot(snapshot => {
+                    albums = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    if (currentView === 'albums') {
+                        renderAlbums();
+                    }
+                }, (error) => {
+                    console.error("Erro fatal ao carregar álbuns: ", error);
+                    appContainer.innerHTML = `<div class="text-center bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded" role="alert"><p><strong>Erro de Conexão:</strong> Não foi possível carregar os álbuns.</p></div>`;
+                });
+            }
+            
+            const appContainer = document.getElementById('app-container');
+            const mainTitle = document.getElementById('main-title');
+            const mainSubtitle = document.getElementById('main-subtitle');
+            const fabContainer = document.getElementById('fab-container');
 
-            function renderAlbums() {
-                currentView = 'albums';
-                fabContainer.style.display = 'block'; // Mostra o botão flutuante
-                appContainer.innerHTML = '';
-                mainTitle.textContent = 'Galeria de Álbuns';
-                mainSubtitle.textContent = 'Escolha um álbum para ver as fotos';
+            function renderAlbums() {
+                currentView = 'albums';
+                fabContainer.style.display = 'block';
+                appContainer.innerHTML = '';
+                mainTitle.textContent = 'Galeria de Álbuns';
+                mainSubtitle.textContent = 'Escolha um álbum para ver as fotos';
 
-                if (albums.length === 0) {
-                    appContainer.innerHTML = `<p class="text-center text-gray-500">Nenhum álbum encontrado. Crie o primeiro usando o botão no canto inferior direito.</p>`;
-                    return;
-                }
+                if (albums.length === 0) {
+                    appContainer.innerHTML = `<p class="text-center text-gray-500">Nenhum álbum encontrado. Crie o primeiro usando o botão no canto inferior direito.</p>`;
+                    return;
+                }
 
-                const albumsGrid = document.createElement('div');
-                albumsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8';
+                const albumsGrid = document.createElement('div');
+                albumsGrid.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8';
 
-                albums.forEach(album => {
-                    const coverUrl = album.coverImageURL || 'https://placehold.co/400x300/e0e0e0/ffffff?text=Sem+Capa';
-                    
-                    const albumCard = document.createElement('div');
-                    albumCard.className = 'relative bg-white rounded-xl shadow-lg group transition-all duration-300 hover:shadow-xl transform hover:scale-105';
-                    
-                    albumCard.innerHTML = `
-                        <div class="cursor-pointer" data-album-id="${album.id}">
-                            <img src="${coverUrl}" alt="Capa: ${album.title}" class="w-full h-48 object-cover rounded-t-xl">
-                            <div class="p-5 text-center"><h3 class="text-xl font-semibold text-gray-700">${album.title}</h3></div>
-                        </div>
-                        <div class="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button data-action="edit-title" class="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 shadow-lg" title="Editar Título"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
-                            <button data-action="manage-photos" class="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 shadow-lg" title="Gerenciar Fotos"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg></button>
-                            <button data-action="delete" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-lg" title="Excluir Álbum"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
-                        </div>
-                    `;
-                    
-                    albumCard.querySelector('.cursor-pointer').addEventListener('click', () => renderAlbumPhotos(album.id));
-                    albumCard.querySelector('[data-action="edit-title"]').addEventListener('click', (e) => { e.stopPropagation(); showEditAlbumModal(album.id); });
-                    albumCard.querySelector('[data-action="manage-photos"]').addEventListener('click', (e) => { e.stopPropagation(); renderEditMode(album.id); });
-                    albumCard.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); deleteAlbumFromDb(album.id); });
+                albums.forEach(album => {
+                    const coverUrl = album.coverImageURL || 'https://placehold.co/400x300/e0e0e0/ffffff?text=Sem+Capa';
+                    
+                    const albumCard = document.createElement('div');
+                    albumCard.className = 'relative bg-white rounded-xl shadow-lg group transition-all duration-300 hover:shadow-xl transform hover:scale-105';
+                    
+                    albumCard.innerHTML = `
+                        <div class="cursor-pointer" data-album-id="${album.id}">
+                            <img src="${coverUrl}" alt="Capa: ${album.title}" class="w-full h-48 object-cover rounded-t-xl">
+                            <div class="p-5 text-center"><h3 class="text-xl font-semibold text-gray-700">${album.title}</h3></div>
+                        </div>
+                        <div class="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button data-action="edit-title" class="bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 shadow-lg" title="Editar Título"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M17.414 2.586a2 2 0 00-2.828 0L7 10.172V13h2.828l7.586-7.586a2 2 0 000-2.828z" /><path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4a1 1 0 010 2H4v10h10v-4a1 1 0 112 0v4a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" clip-rule="evenodd" /></svg></button>
+                            <button data-action="manage-photos" class="bg-green-500 text-white p-2 rounded-full hover:bg-green-600 shadow-lg" title="Gerenciar Fotos"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd" /></svg></button>
+                            <button data-action="delete" class="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 shadow-lg" title="Excluir Álbum"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg></button>
+                        </div>
+                    `;
+                    
+                    albumCard.querySelector('.cursor-pointer').addEventListener('click', () => renderAlbumPhotos(album.id));
+                    albumCard.querySelector('[data-action="edit-title"]').addEventListener('click', (e) => { e.stopPropagation(); showEditAlbumModal(album.id); });
+                    albumCard.querySelector('[data-action="manage-photos"]').addEventListener('click', (e) => { e.stopPropagation(); renderEditMode(album.id); });
+                    albumCard.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); deleteAlbumFromDb(album.id); });
 
-                    albumsGrid.appendChild(albumCard);
-                });
-                appContainer.appendChild(albumsGrid);
-            }
+                    albumsGrid.appendChild(albumCard);
+                });
+                appContainer.appendChild(albumsGrid);
+            }
 
-            function renderAlbumPhotos(albumId) {
-                renderEditMode(albumId);
-            }
+            function renderAlbumPhotos(albumId) {
+                renderEditMode(albumId);
+            }
 
-            function showAddAlbumModal() {
-                showAlbumModal({
-                    modalTitle: 'Criar Novo Álbum',
-                    onSave: async (newTitle) => {
-                        const newAlbumData = {
-                            title: newTitle,
-                            coverImageURL: '',
-                            photos: [],
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        };
-                        try {
-                            await albumsCollectionRef.add(newAlbumData);
-                        } catch(e) {
-                            console.error("Erro ao criar álbum: ", e);
-                            alert("Não foi possível criar o novo álbum.");
-                        }
-                    }
-                });
-            }
+            function showAddAlbumModal() {
+                showAlbumModal({
+                    modalTitle: 'Criar Novo Álbum',
+                    onSave: async (newTitle) => {
+                        const newAlbumData = {
+                            title: newTitle,
+                            coverImageURL: '',
+                            photos: [],
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        };
+                        try {
+                            await albumsCollectionRef.add(newAlbumData);
+                        } catch(e) {
+                            console.error("Erro ao criar álbum: ", e);
+                            alert("Não foi possível criar o novo álbum.");
+                        }
+                    }
+                });
+            }
 
-            function showEditAlbumModal(albumId) {
-                const album = albums.find(a => a.id === albumId);
-                if (!album) return;
-                showAlbumModal({
-                    modalTitle: 'Editar Título do Álbum',
-                    initialValue: album.title,
-                    onSave: async (updatedTitle) => {
-                        await updateAlbum(albumId, { title: updatedTitle });
-                    }
-                });
-            }
+            function showEditAlbumModal(albumId) {
+                const album = albums.find(a => a.id === albumId);
+                if (!album) return;
+                showAlbumModal({
+                    modalTitle: 'Editar Título do Álbum',
+                    initialValue: album.title,
+                    onSave: async (updatedTitle) => {
+                        await updateAlbum(albumId, { title: updatedTitle });
+                    }
+                });
+            }
 
-            function showAlbumModal({ modalTitle, initialValue = '', onSave }) {
-                const modalOverlay = document.createElement('div');
-                modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-                modalOverlay.innerHTML = `
-                    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-                        <h3 class="text-2xl font-bold mb-4">${modalTitle}</h3>
-                        <input type="text" id="album-title-input" class="w-full p-2 border border-gray-300 rounded-lg mb-4" value="${initialValue}" placeholder="Digite o título do álbum">
-                        <div class="flex justify-end space-x-4">
-                            <button id="cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancelar</button>
-                            <button id="save-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Salvar</button>
-                        </div>
-                    </div>
-                `;
-                document.body.appendChild(modalOverlay);
-                const titleInput = document.getElementById('album-title-input');
-                titleInput.focus();
+            function showAlbumModal({ modalTitle, initialValue = '', onSave }) {
+                const modalOverlay = document.createElement('div');
+                modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modalOverlay.innerHTML = `
+                    <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+                        <h3 class="text-2xl font-bold mb-4">${modalTitle}</h3>
+                        <input type="text" id="album-title-input" class="w-full p-2 border border-gray-300 rounded-lg mb-4" value="${initialValue}" placeholder="Digite o título do álbum">
+                        <div class="flex justify-end space-x-4">
+                            <button id="cancel-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300">Cancelar</button>
+                            <button id="save-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700">Salvar</button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modalOverlay);
+                const titleInput = document.getElementById('album-title-input');
+                titleInput.focus();
 
-                const closeModal = () => document.body.removeChild(modalOverlay);
-                document.getElementById('save-btn').addEventListener('click', () => {
-                    const newTitle = titleInput.value.trim();
-                    if (newTitle) {
-                        onSave(newTitle);
-                        closeModal();
-                    }
-                });
-                document.getElementById('cancel-btn').addEventListener('click', closeModal);
-            }
+                const closeModal = () => document.body.removeChild(modalOverlay);
+                document.getElementById('save-btn').addEventListener('click', () => {
+                    const newTitle = titleInput.value.trim();
+                    if (newTitle) {
+                        onSave(newTitle);
+                        closeModal();
+                    }
+                });
+                document.getElementById('cancel-btn').addEventListener('click', closeModal);
+            }
 
-            async function renderEditMode(albumId) {
-                currentView = 'edit';
-                fabContainer.style.display = 'none'; // Esconde o botão flutuante
-                const album = albums.find(a => a.id === albumId);
-                if (!album) {
-                    alert("Álbum não encontrado!");
-                    // Retorna para a galeria se o álbum não for encontrado
-                    return startApp();
-                }
+            async function renderEditMode(albumId) {
+                currentView = 'edit';
+                fabContainer.style.display = 'none';
+                const album = albums.find(a => a.id === albumId);
+                if (!album) {
+                    alert("Álbum não encontrado!");
+                    return startApp();
+                }
 
-                appContainer.innerHTML = '';
-                mainTitle.textContent = `Editando: ${album.title}`;
-                mainSubtitle.textContent = 'Adicione, remova, defina a capa ou reordene as fotos.';
+                appContainer.innerHTML = '';
+                mainTitle.textContent = `Editando: ${album.title}`;
+                mainSubtitle.textContent = 'Adicione, remova, defina a capa ou reordene as fotos.';
 
-                const backBtn = document.createElement('button');
-                backBtn.className = 'back-button mb-6 text-blue-600 hover:text-blue-800 font-semibold flex items-center text-lg';
-                backBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H6" /></svg>Voltar para a Galeria`;
-                backBtn.addEventListener('click', () => {
-                     // NOVO: Volta para a função de inicialização
-                     startApp();
-                });
-                appContainer.appendChild(backBtn);
+                const backBtn = document.createElement('button');
+                backBtn.className = 'back-button mb-6 text-blue-600 hover:text-blue-800 font-semibold flex items-center text-lg';
+                backBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 15l-3-3m0 0l3-3m-3 3h8a5 5 0 000-10H6" /></svg>Voltar para a Galeria`;
+                backBtn.addEventListener('click', () => {
+                    startApp();
+                });
+                appContainer.appendChild(backBtn);
 
-                // Remova a criação do elemento 'uploadSection' aqui, pois ele já existe no HTML.
-                
-                // O seu código original tem uma linha que cria a div de upload.
-                // Você deve ter a div no HTML agora, então pode remover a linha abaixo se ela existir.
-                // const uploadSection = document.createElement('div');
-                // ...
-                
-                document.getElementById('photo-upload-input').addEventListener('change', (e) => handlePhotoUpload(e, album));
-                
-                // CÓDIGO DO DRAG AND DROP ADICIONADO AQUI
-                const uploadArea = document.getElementById('upload-area');
+                const uploadSection = document.createElement('div');
+                uploadSection.innerHTML = `
+                    <div class="mt-8 mb-6 p-6 border-2 border-gray-300 border-dashed rounded-lg text-center transition-all duration-300" id="upload-area">
+                        <div class="flex flex-col items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                            </svg>
+                            <p class="text-gray-600 mt-2">Arraste e solte fotos aqui ou <a href="#" id="browse-link" class="text-blue-600 hover:underline">clique para selecionar</a></p>
+                        </div>
+                    </div>
+                    <input type="file" id="photo-upload-input" class="hidden" multiple accept="image/*">
+                    <div id="upload-progress-container" class="mt-4 text-center"></div>
+                    <button id="save-button" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-300 mb-6">Salvar Alterações</button>
+                `;
+                appContainer.appendChild(uploadSection);
 
-                // Previna o comportamento padrão do navegador
-                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                    uploadArea.addEventListener(eventName, preventDefaults, false);
-                });
+                const browseLink = document.getElementById('browse-link');
+                const photoUploadInput = document.getElementById('photo-upload-input');
+                browseLink.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    photoUploadInput.click();
+                });
 
-                function preventDefaults(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                }
+                photoUploadInput.addEventListener('change', (e) => handlePhotoUpload(e, album));
+                const saveButton = document.getElementById('save-button');
+                saveButton.addEventListener('click', () => {
+                    alert("Alterações salvas!");
+                    startApp();
+                });
 
-                // Adicione feedback visual para o usuário
-                ['dragenter', 'dragover'].forEach(eventName => {
-                    uploadArea.addEventListener(eventName, () => {
-                        uploadArea.classList.add('border-blue-500', 'bg-blue-50');
-                    }, false);
-                });
+                const uploadArea = document.getElementById('upload-area');
 
-                ['dragleave', 'drop'].forEach(eventName => {
-                    uploadArea.addEventListener(eventName, () => {
-                        uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
-                    }, false);
-                });
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, preventDefaults, false);
+                });
 
-                // Lida com os arquivos soltos
-                uploadArea.addEventListener('drop', (e) => {
-                    let dt = e.dataTransfer;
-                    let files = dt.files;
-                    
-                    // Reutiliza a função de upload existente
-                    handlePhotoUpload({ target: { files: files } }, album);
-                }, false);
+                function preventDefaults(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }
+
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => {
+                        uploadArea.classList.add('border-blue-500', 'bg-blue-50');
+                    }, false);
+                });
+
+                ['dragleave', 'drop'].forEach(eventName => {
+                    uploadArea.addEventListener(eventName, () => {
+                        uploadArea.classList.remove('border-blue-500', 'bg-blue-50');
+                    }, false);
+                });
+
+                uploadArea.addEventListener('drop', (e) => {
+                    let dt = e.dataTransfer;
+                    let files = dt.files;
+                    handlePhotoUpload({ target: { files: files } }, album);
+                }, false);
 
 
-                const photoListContainer = document.createElement('div');
-                photoListContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
-                appContainer.appendChild(photoListContainer);
+                const photoListContainer = document.createElement('div');
+                photoListContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4';
+                appContainer.appendChild(photoListContainer);
 
-                renderPhotoListForEdit(album, photoListContainer);
-            }
+                renderPhotoListForEdit(album, photoListContainer);
+            }
 
-            function renderPhotoListForEdit(album, container) {
-                container.innerHTML = '';
-                // Encontra o álbum mais atualizado na lista principal `albums`
-                const currentAlbum = albums.find(a => a.id === album.id);
-                if (!currentAlbum) return;
-                
-                (currentAlbum.photos || []).forEach((photo, index) => {
-                    const isCover = currentAlbum.coverImageURL === photo.url;
-                    const photoItem = document.createElement('div');
-                    photoItem.className = 'bg-white rounded-xl shadow-md p-2 flex items-center group photo-item';
-                    photoItem.draggable = true;
-                    photoItem.dataset.index = index;
-                    
-                    photoItem.innerHTML = `
-                        <img src="${photo.url}" alt="Foto ${index + 1}" class="w-16 h-16 object-cover rounded-lg mr-4">
-                        <span class="truncate flex-grow text-sm text-gray-700">${photo.path.split('/').pop()}</span>
-                        <div class="flex items-center space-x-2">
-                            <button data-action="set-cover" class="${isCover ? 'text-yellow-400' : 'text-gray-400'} hover:text-yellow-400" title="Definir como capa">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
-                            </button>
-                            <button data-action="remove" class="text-red-500 hover:text-red-700" title="Remover Foto">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                            </button>
-                        </div>
-                    `;
-                    
-                    photoItem.querySelector('[data-action="set-cover"]').addEventListener('click', async () => {
-                        await updateAlbum(album.id, { coverImageURL: photo.url });
-                    });
-                    
-                    photoItem.querySelector('[data-action="remove"]').addEventListener('click', async () => {
-                        if (confirm('Deseja remover esta foto?')) {
-                            const updatedPhotos = currentAlbum.photos.filter(p => p.path !== photo.path);
-                            const updateData = { photos: updatedPhotos };
-                            if (currentAlbum.coverImageURL === photo.url) {
-                                updateData.coverImageURL = updatedPhotos.length > 0 ? updatedPhotos[0].url : '';
-                            }
-                            await updateAlbum(album.id, updateData);
-                        }
-                    });
+            function renderPhotoListForEdit(album, container) {
+                container.innerHTML = '';
+                const currentAlbum = albums.find(a => a.id === album.id);
+                if (!currentAlbum) return;
+                
+                (currentAlbum.photos || []).forEach((photo, index) => {
+                    const isCover = currentAlbum.coverImageURL === photo.url;
+                    const photoItem = document.createElement('div');
+                    photoItem.className = 'bg-white rounded-xl shadow-md p-2 flex items-center group photo-item';
+                    photoItem.draggable = true;
+                    photoItem.dataset.index = index;
+                    
+                    photoItem.innerHTML = `
+                        <img src="${photo.url}" alt="Foto ${index + 1}" class="w-16 h-16 object-cover rounded-lg mr-4">
+                        <span class="truncate flex-grow text-sm text-gray-700">${photo.path.split('/').pop()}</span>
+                        <div class="flex items-center space-x-2">
+                            <button data-action="set-cover" class="${isCover ? 'text-yellow-400' : 'text-gray-400'} hover:text-yellow-400" title="Definir como capa">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" /></svg>
+                            </button>
+                            <button data-action="remove" class="text-red-500 hover:text-red-700" title="Remover Foto">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
+                            </button>
+                        </div>
+                    `;
+                    
+                    photoItem.querySelector('[data-action="set-cover"]').addEventListener('click', async () => {
+                        await updateAlbum(album.id, { coverImageURL: photo.url });
+                    });
+                    
+                    photoItem.querySelector('[data-action="remove"]').addEventListener('click', async () => {
+                        if (confirm('Deseja remover esta foto?')) {
+                            const updatedPhotos = currentAlbum.photos.filter(p => p.path !== photo.path);
+                            const updateData = { photos: updatedPhotos };
+                            if (currentAlbum.coverImageURL === photo.url) {
+                                updateData.coverImageURL = updatedPhotos.length > 0 ? updatedPhotos[0].url : '';
+                            }
+                            await updateAlbum(album.id, updateData);
+                        }
+                    });
 
-                    container.appendChild(photoItem);
-                });
-            }
+                    container.appendChild(photoItem);
+                });
+            }
 
-            async function handlePhotoUpload(event, album) {
-                const files = event.target.files;
-                if (!files.length) return;
+            async function handlePhotoUpload(event, album) {
+                const files = event.target.files;
+                if (!files.length) return;
 
-                const progressContainer = document.getElementById('upload-progress-container');
-                progressContainer.innerHTML = '<h3>Enviando...</h3>';
+                const progressContainer = document.getElementById('upload-progress-container');
+                progressContainer.innerHTML = '<h3>Enviando...</h3>';
 
-                for (const file of files) {
-                    const filePath = `albums/${album.id}/${Date.now()}_${file.name}`;
-                    const uploadTask = storageRef.child(filePath).put(file);
+                for (const file of files) {
+                    const filePath = `albums/${album.id}/${Date.now()}_${file.name}`;
+                    const uploadTask = storageRef.child(filePath).put(file);
 
-                    uploadTask.on('state_changed', 
-                        (snapshot) => {
-                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                            progressContainer.innerHTML = `<p>Enviando ${file.name}: ${Math.round(progress)}%</p>`;
-                        },
-                        (error) => {
-                            console.error("Erro no upload: ", error);
-                            progressContainer.innerHTML = `<p class="text-red-500">Falha ao enviar ${file.name}</p>`;
-                        },
-                        async () => {
-                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
-                            const newPhoto = { path: filePath, url: downloadURL };
-                            
-                            const currentAlbum = albums.find(a => a.id === album.id);
-                            const updatedPhotos = [...(currentAlbum.photos || []), newPhoto];
-                            
-                            const updateData = { photos: updatedPhotos };
-                            if (!currentAlbum.coverImageURL) {
-                                updateData.coverImageURL = downloadURL;
-                            }
-                            
-                            await updateAlbum(album.id, updateData);
-                            
-                            progressContainer.innerHTML = `<p class="text-green-500">${file.name} enviado com sucesso!</p>`;
-                        }
-                    );
-                }
-            }
-            
-            // NOVO: Função para iniciar o aplicativo
-            function startApp() {
-                 appContainer.innerHTML = `<p class="text-center text-gray-500">Carregando álbuns...</p>`;
-                 setupRealtimeListener();
-            }
+                    uploadTask.on('state_changed', 
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            progressContainer.innerHTML = `<p>Enviando ${file.name}: ${Math.round(progress)}%</p>`;
+                        },
+                        (error) => {
+                            console.error("Erro no upload: ", error);
+                            progressContainer.innerHTML = `<p class="text-red-500">Falha ao enviar ${file.name}</p>`;
+                        },
+                        async () => {
+                            const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                            const newPhoto = { path: filePath, url: downloadURL };
+                            
+                            const currentAlbum = albums.find(a => a.id === album.id);
+                            const updatedPhotos = [...(currentAlbum.photos || []), newPhoto];
+                            
+                            const updateData = { photos: updatedPhotos };
+                            if (!currentAlbum.coverImageURL) {
+                                updateData.coverImageURL = downloadURL;
+                            }
+                            
+                            await updateAlbum(album.id, updateData);
+                            
+                            progressContainer.innerHTML = `<p class="text-green-500">${file.name} enviado com sucesso!</p>`;
+                        }
+                    );
+                }
+            }
+            
+            function startApp() {
+                appContainer.innerHTML = `<p class="text-center text-gray-500">Carregando álbuns...</p>`;
+                setupRealtimeListener();
+            }
 
-            const mainFab = document.getElementById('main-fab');
-            mainFab.addEventListener('click', showAddAlbumModal);
+            const mainFab = document.getElementById('main-fab');
+            mainFab.addEventListener('click', showAddAlbumModal);
 
-            // Inicia o aplicativo
-            startApp();
-        });
-    </script>
+            startApp();
+        });
+    </script>
 </body>
 </html>
